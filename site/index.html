@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ferrovault — encrypted password manager</title>
+<style>
+  :root{
+    --base:#1e1e2e; --mantle:#181825; --crust:#11111b;
+    --surface0:#313244; --surface1:#45475a; --surface2:#585b70;
+    --text:#cdd6f4; --subtext:#a6adc8; --overlay:#7f849c;
+    --blue:#89b4fa; --sky:#89dceb; --green:#a6e3a1; --yellow:#f9e2af;
+    --mauve:#cba6f7; --red:#f38ba8; --teal:#94e2d5; --peach:#fab387;
+    --mono:"Cascadia Code","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--base); color:var(--text); font-family:var(--sans);
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(137,180,250,.10), transparent 60%),
+      radial-gradient(800px 500px at 0% 0%, rgba(203,166,247,.10), transparent 55%);
+  }
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  code,.mono{font-family:var(--mono)}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+      background:rgba(24,24,37,.72);border-bottom:1px solid var(--surface0)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:var(--mono);font-weight:700;font-size:1.15rem;letter-spacing:.02em}
+  .brand .bar{color:var(--sky)}
+  .navlinks{display:flex;gap:26px;font-size:.95rem}
+  .navlinks a{color:var(--subtext)}
+  .navlinks a:hover{color:var(--text);text-decoration:none}
+
+  /* hero */
+  header.hero{padding:88px 0 64px;text-align:center}
+  .eyebrow{font-family:var(--mono);color:var(--mauve);font-size:.85rem;
+           letter-spacing:.18em;text-transform:uppercase}
+  h1{font-size:4.2rem;line-height:1;margin:18px 0 16px;font-weight:800;letter-spacing:-.02em;
+     background:linear-gradient(120deg,var(--sky),var(--blue) 45%,var(--mauve));
+     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{font-size:1.35rem;color:var(--text);max-width:680px;margin:0 auto}
+  .sub{color:var(--subtext);max-width:640px;margin:14px auto 0;font-size:1.02rem}
+  .badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:28px 0 30px}
+  .badge{font-family:var(--mono);font-size:.78rem;padding:6px 12px;border-radius:999px;
+         background:var(--surface0);border:1px solid var(--surface1);color:var(--subtext)}
+  .badge b{color:var(--text);font-weight:600}
+  .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:1rem;
+       padding:13px 22px;border-radius:12px;border:1px solid transparent;transition:.15s}
+  .btn.primary{background:linear-gradient(120deg,var(--blue),var(--mauve));color:#11111b}
+  .btn.primary:hover{filter:brightness(1.08);text-decoration:none}
+  .btn.ghost{background:var(--surface0);border-color:var(--surface1);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--overlay);text-decoration:none}
+
+  /* sections */
+  section{padding:62px 0}
+  .sec-head{text-align:center;margin-bottom:42px}
+  .sec-head h2{font-size:2.1rem;letter-spacing:-.01em}
+  .sec-head p{color:var(--subtext);margin-top:8px}
+  .accent{color:var(--sky)}
+
+  /* feature grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:linear-gradient(180deg,var(--mantle),rgba(24,24,37,.4));
+        border:1px solid var(--surface0);border-radius:16px;padding:24px;transition:.15s}
+  .card:hover{border-color:var(--surface2);transform:translateY(-3px)}
+  .card .ic{font-size:1.5rem;width:44px;height:44px;display:grid;place-items:center;
+            border-radius:11px;background:var(--surface0);margin-bottom:14px}
+  .card h3{font-size:1.06rem;margin-bottom:6px}
+  .card p{color:var(--subtext);font-size:.93rem}
+
+  /* security split */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .panel{border:1px solid var(--surface0);border-radius:16px;padding:26px;background:var(--mantle)}
+  .panel h3{font-size:1.1rem;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+  .panel.good h3{color:var(--green)} .panel.warn h3{color:var(--peach)}
+  .panel ul{list-style:none}
+  .panel li{padding:8px 0 8px 26px;position:relative;color:var(--subtext);font-size:.95rem;
+            border-top:1px solid rgba(49,50,68,.6)}
+  .panel li:first-child{border-top:none}
+  .panel.good li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+  .panel.warn li::before{content:"!";position:absolute;left:4px;color:var(--peach);font-weight:700}
+  .panel li b{color:var(--text);font-weight:600}
+
+  /* screenshots */
+  .shots{display:flex;flex-direction:column;gap:26px}
+  .shot{border:1px solid var(--surface0);border-radius:14px;overflow:hidden;background:var(--crust);
+        box-shadow:0 24px 60px -28px rgba(0,0,0,.8)}
+  .shot .cap{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--surface0);
+             font-family:var(--mono);font-size:.85rem;color:var(--subtext);background:var(--mantle)}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .dot.r{background:var(--red)} .dot.y{background:var(--yellow)} .dot.g{background:var(--green)}
+  .shot .cap .name{margin-left:10px}
+  .shot img{display:block;width:100%}
+
+  /* code */
+  .code{background:var(--crust);border:1px solid var(--surface0);border-radius:14px;
+        padding:22px 24px;font-family:var(--mono);font-size:.92rem;overflow:auto;color:var(--text)}
+  .code .c{color:var(--overlay)} .code .p{color:var(--green)} .code .k{color:var(--mauve)}
+  .code .a{color:var(--peach)}
+  .usage{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+
+  /* tech row */
+  .tech{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .chip{font-family:var(--mono);font-size:.82rem;color:var(--subtext);background:var(--surface0);
+        border:1px solid var(--surface1);border-radius:9px;padding:8px 14px}
+
+  footer{border-top:1px solid var(--surface0);padding:40px 0 56px;color:var(--overlay);font-size:.9rem}
+  footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  footer a{color:var(--subtext)}
+  .note{max-width:560px}
+
+  @media (max-width:880px){
+    h1{font-size:3rem} .grid{grid-template-columns:1fr 1fr}
+    .split,.usage{grid-template-columns:1fr} .navlinks{display:none}
+  }
+  @media (max-width:560px){ .grid{grid-template-columns:1fr} h1{font-size:2.4rem} }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap nav">
+  <div class="brand"><span class="bar">▌</span> ferrovault</div>
+  <div class="navlinks">
+    <a href="#features">Features</a>
+    <a href="#security">Security</a>
+    <a href="#screens">Screenshots</a>
+    <a href="#start">Quick start</a>
+    <a href="https://github.com/Athology0000/ferrovault">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Rust · zero-trust local vault</div>
+  <h1>ferrovault</h1>
+  <p class="tagline">An encrypted command-line password manager — applied cryptography done correctly.</p>
+  <p class="sub">One master password. One vault file. Argon2id + AES-256-GCM, a tamper-evident binary format,
+     secrets zeroized from memory, and a sleek terminal UI. No cloud. No telemetry. No trust required.</p>
+  <div class="badges">
+    <span class="badge"><b>Rust</b> 2021</span>
+    <span class="badge"><b>Argon2id</b> 64 MiB</span>
+    <span class="badge"><b>AES-256-GCM</b></span>
+    <span class="badge"><b>RFC 6238</b> TOTP</span>
+    <span class="badge"><b>MIT</b> licensed</span>
+    <span class="badge"><b>0</b> C deps*</span>
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/Athology0000/ferrovault">★ View on GitHub</a>
+    <a class="btn ghost" href="#start">⌘ Quick start</a>
+  </div>
+</div></header>
+
+<section id="features"><div class="wrap">
+  <div class="sec-head"><h2>Built like a <span class="accent">security tool</span>, not a toy</h2>
+    <p>Every layer makes a deliberate, defensible choice.</p></div>
+  <div class="grid">
+    <div class="card"><div class="ic">🔑</div><h3>Argon2id + AES-256-GCM</h3>
+      <p>Memory-hard key derivation (64 MiB / t=3 / p=4) feeding authenticated encryption with a fresh nonce on every write.</p></div>
+    <div class="card"><div class="ic">📦</div><h3>Tamper-evident format</h3>
+      <p>A custom <code>PVLT</code> binary container whose header is bound as GCM associated data — a parameter downgrade or header edit breaks decryption.</p></div>
+    <div class="card"><div class="ic">🧹</div><h3>Zeroized secrets</h3>
+      <p>Master password, derived key, and decrypted entries are wiped from RAM on drop — best-effort, and honest about its limits.</p></div>
+    <div class="card"><div class="ic">💾</div><h3>Atomic &amp; locked writes</h3>
+      <p>Temp-file → fsync → atomic rename, under a cross-platform advisory lock. A crash never leaves a half-written vault.</p></div>
+    <div class="card"><div class="ic">⏱️</div><h3>TOTP &amp; breach check</h3>
+      <p>Built-in RFC 6238 2FA codes, plus Have I Been Pwned via k-anonymity — only a 5-char hash prefix ever leaves the machine.</p></div>
+    <div class="card"><div class="ic">🖥️</div><h3>Sleek TUI &amp; GUI</h3>
+      <p>A polished ratatui terminal UI and a desktop app, switchable with one setting: <code>ferrovault config ui&nbsp;tui|gui</code>.</p></div>
+  </div>
+</div></section>
+
+<section id="security" style="background:var(--mantle)"><div class="wrap">
+  <div class="sec-head"><h2>An honest <span class="accent">threat model</span></h2>
+    <p>Real security tools state what they <em>don't</em> protect, too.</p></div>
+  <div class="split">
+    <div class="panel good"><h3>✓ Defends against</h3>
+      <ul>
+        <li><b>Vault theft at rest</b> — Argon2id + AES-256-GCM</li>
+        <li><b>Tampering</b> — GCM tag + header-as-AAD</li>
+        <li><b>Power loss mid-save</b> — atomic durable writes</li>
+        <li><b>Concurrent writers</b> — advisory file lock</li>
+        <li><b>Predictable randomness</b> — OS CSPRNG everywhere</li>
+      </ul></div>
+    <div class="panel warn"><h3>! Does <em>not</em> defend</h3>
+      <ul>
+        <li><b>A compromised host</b> — keyloggers / memory scrapers while unlocked</li>
+        <li><b>Swap &amp; core dumps</b> — zeroization is best-effort</li>
+        <li><b>A weak master password</b> — Argon2 raises cost, not miracles</li>
+        <li><b>Clipboard history managers</b> — despite auto-clear</li>
+        <li><b>Binary tampering</b> — verify what you run</li>
+      </ul></div>
+  </div>
+</div></section>
+
+<section id="screens"><div class="wrap">
+  <div class="sec-head"><h2>The <span class="accent">terminal UI</span></h2>
+    <p>Searchable, keyboard-driven, masked by default.</p></div>
+  <div class="shots">
+    <figure class="shot">
+      <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="name">ferrovault — browse</span></div>
+      <img src="./assets/01-browse.png" alt="Browsing the vault, password masked" />
+    </figure>
+    <figure class="shot">
+      <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="name">ferrovault — entry revealed + live TOTP</span></div>
+      <img src="./assets/02-revealed-totp.png" alt="Entry revealed with a live TOTP code" />
+    </figure>
+    <figure class="shot">
+      <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="name">ferrovault — search</span></div>
+      <img src="./assets/03-search.png" alt="Search filtering the entry list" />
+    </figure>
+  </div>
+</div></section>
+
+<section id="start" style="background:var(--mantle)"><div class="wrap">
+  <div class="sec-head"><h2>Quick <span class="accent">start</span></h2>
+    <p>Build it, create a vault, launch the UI.</p></div>
+  <div class="usage">
+    <div class="code"><span class="c"># build from source</span><br/>
+      <span class="p">$</span> <span class="k">cargo</span> build --release<br/><br/>
+      <span class="c"># create your vault</span><br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> init<br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> add github <span class="a">--generate</span><br/><br/>
+      <span class="c"># launch the terminal UI</span><br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> ui
+    </div>
+    <div class="code"><span class="c"># generate a strong password</span><br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> gen 32<br/><br/>
+      <span class="c"># 2FA code · breach check</span><br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> totp github<br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> check github<br/><br/>
+      <span class="c"># pick your default UI</span><br/>
+      <span class="p">$</span> <span class="k">ferrovault</span> config ui <span class="a">gui</span>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><h2>Pure-Rust <span class="accent">stack</span></h2></div>
+  <div class="tech">
+    <span class="chip">argon2</span><span class="chip">aes-gcm</span><span class="chip">ciborium (CBOR)</span>
+    <span class="chip">zeroize</span><span class="chip">fd-lock</span><span class="chip">ratatui</span>
+    <span class="chip">clap</span><span class="chip">hmac · sha1</span><span class="chip">attohttpc (native-TLS)</span>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="note">
+    <strong style="color:var(--text)">ferrovault</strong> — MIT licensed. An independent, from-scratch
+    build for learning &amp; portfolio; inspired in scope by the <em>foundations/password-manager</em>
+    curriculum in CarterPerez-dev/Cybersecurity-Projects (no code copied).
+    <br/><span style="font-size:.82rem">* No C build toolchain required on Windows/macOS; Linux links system OpenSSL via native-TLS.</span>
+  </div>
+  <div>
+    <a href="https://github.com/Athology0000/ferrovault">GitHub ↗</a>
+  </div>
+</div></footer>
+
+</body>
+</html>
