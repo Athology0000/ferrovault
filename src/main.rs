@@ -73,11 +73,12 @@ fn run() -> Result<()> {
             commands::cmd_add(&store, master.as_bytes(), &name, entry)?;
             eprintln!("Added entry: {name}");
         }
-        Command::Get { name, copy, timeout: _timeout } => {
+        Command::Get { name, copy, timeout } => {
             let master = prompt_master()?;
             let entry = commands::cmd_get(&store, master.as_bytes(), &name)?;
             if copy {
-                unimplemented!("copy — implemented in Task 8")
+                ferrovault::clipboard::copy_with_clear(&entry.password, timeout)?;
+                eprintln!("Password copied; clipboard clears in {timeout}s.");
             } else {
                 println!("username  {}", entry.username);
                 println!("password  {}", entry.password);
