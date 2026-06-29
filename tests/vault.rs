@@ -39,7 +39,7 @@ fn create_twice_fails() {
 fn open_missing_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("nope.pvlt"));
-    assert!(matches!(store.open(b"m").unwrap_err(), Error::VaultNotFound(_)));
+    assert!(matches!(store.open(b"m"), Err(Error::VaultNotFound(_))));
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn wrong_password_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("vault.pvlt"));
     store.create(b"right").unwrap();
-    assert!(matches!(store.open(b"wrong").unwrap_err(), Error::WrongPasswordOrCorrupt));
+    assert!(matches!(store.open(b"wrong"), Err(Error::WrongPasswordOrCorrupt)));
 }
 
 #[test]
