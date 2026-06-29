@@ -3,7 +3,12 @@ use ferrovault::Error;
 
 fn test_params() -> KdfParams {
     // small cost for fast tests
-    KdfParams { m_cost: 8, t_cost: 1, p_cost: 1, salt: [7u8; 16] }
+    KdfParams {
+        m_cost: 8,
+        t_cost: 1,
+        p_cost: 1,
+        salt: [7u8; 16],
+    }
 }
 
 #[test]
@@ -53,7 +58,12 @@ fn aad_mismatch_fails() {
 
 #[test]
 fn is_weaker_than_default() {
-    let weak = KdfParams { m_cost: 1024, t_cost: 1, p_cost: 1, salt: [0; 16] };
+    let weak = KdfParams {
+        m_cost: 1024,
+        t_cost: 1,
+        p_cost: 1,
+        salt: [0; 16],
+    };
     assert!(weak.is_weaker_than_default());
     let strong = KdfParams::generate_default();
     assert!(!strong.is_weaker_than_default());

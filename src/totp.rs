@@ -29,8 +29,11 @@ pub fn totp_code(key: &[u8], unix_seconds: u64, period: u64, digits: u32) -> Str
 /// plus the number of seconds it remains valid.
 pub fn current_code(secret_b32: &str, unix_seconds: u64) -> Result<(String, u64)> {
     let cleaned: String = secret_b32.chars().filter(|c| !c.is_whitespace()).collect();
-    let key = base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &cleaned.to_uppercase())
-        .ok_or(Error::Totp)?;
+    let key = base32::decode(
+        base32::Alphabet::Rfc4648 { padding: false },
+        &cleaned.to_uppercase(),
+    )
+    .ok_or(Error::Totp)?;
     if key.is_empty() {
         return Err(Error::Totp);
     }

@@ -43,8 +43,8 @@ impl KdfParams {
 
 /// Derive a 32-byte key from the master password. Returned key zeroizes on drop.
 pub fn derive_key(password: &[u8], p: &KdfParams) -> Result<Zeroizing<[u8; 32]>> {
-    let params = Params::new(p.m_cost, p.t_cost, p.p_cost as u32, Some(32))
-        .map_err(|_| Error::Crypto)?;
+    let params =
+        Params::new(p.m_cost, p.t_cost, p.p_cost as u32, Some(32)).map_err(|_| Error::Crypto)?;
     let argon = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let mut key = Zeroizing::new([0u8; 32]);
     argon
@@ -57,7 +57,13 @@ pub fn derive_key(password: &[u8], p: &KdfParams) -> Result<Zeroizing<[u8; 32]>>
 pub fn seal(key: &[u8; 32], nonce: &[u8; 12], aad: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
     cipher
-        .encrypt(Nonce::from_slice(nonce), Payload { msg: plaintext, aad })
+        .encrypt(
+            Nonce::from_slice(nonce),
+            Payload {
+                msg: plaintext,
+                aad,
+            },
+        )
         .map_err(|_| Error::Crypto)
 }
 
@@ -70,7 +76,13 @@ pub fn open(
 ) -> Result<Zeroizing<Vec<u8>>> {
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
     let pt = cipher
-        .decrypt(Nonce::from_slice(nonce), Payload { msg: ciphertext, aad })
+        .decrypt(
+            Nonce::from_slice(nonce),
+            Payload {
+                msg: ciphertext,
+                aad,
+            },
+        )
         .map_err(|_| Error::WrongPasswordOrCorrupt)?;
     Ok(Zeroizing::new(pt))
 }

@@ -87,7 +87,12 @@ pub fn decode(b: &[u8]) -> Result<Decoded> {
         return Err(Error::BadFormat("truncated ciphertext"));
     }
     Ok(Decoded {
-        params: KdfParams { m_cost, t_cost, p_cost, salt },
+        params: KdfParams {
+            m_cost,
+            t_cost,
+            p_cost,
+            salt,
+        },
         nonce,
         ciphertext: b[ct_start..ct_end].to_vec(),
         aad: b[0..ct_start].to_vec(),

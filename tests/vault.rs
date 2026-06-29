@@ -32,7 +32,10 @@ fn create_twice_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("vault.pvlt"));
     store.create(b"master").unwrap();
-    assert!(matches!(store.create(b"master").unwrap_err(), Error::VaultExists(_)));
+    assert!(matches!(
+        store.create(b"master").unwrap_err(),
+        Error::VaultExists(_)
+    ));
 }
 
 #[test]
@@ -47,7 +50,10 @@ fn wrong_password_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("vault.pvlt"));
     store.create(b"right").unwrap();
-    assert!(matches!(store.open(b"wrong"), Err(Error::WrongPasswordOrCorrupt)));
+    assert!(matches!(
+        store.open(b"wrong"),
+        Err(Error::WrongPasswordOrCorrupt)
+    ));
 }
 
 #[test]
@@ -85,7 +91,12 @@ fn rewrite_uses_given_params() {
     let store = VaultStore::new(path.clone());
     store.create(b"m").unwrap();
     let (vault, _) = store.open(b"m").unwrap();
-    let weak = KdfParams { m_cost: 1024, t_cost: 1, p_cost: 1, salt: [3u8; 16] };
+    let weak = KdfParams {
+        m_cost: 1024,
+        t_cost: 1,
+        p_cost: 1,
+        salt: [3u8; 16],
+    };
     store.rewrite(b"m", &weak, &vault).unwrap();
     let bytes = std::fs::read(&path).unwrap();
     let decoded = ferrovault::format::decode(&bytes).unwrap();

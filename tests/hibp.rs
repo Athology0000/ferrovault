@@ -20,7 +20,8 @@ fn finds_pwned_password_and_sends_only_prefix() {
     // SHA1("password") = 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8
     // prefix = 5BAA6 ; suffix = 1E4C9B93F3F0682250B6CF8331B7EE68FD8
     let fake = FakeFetcher {
-        body: "1E4C9B93F3F0682250B6CF8331B7EE68FD8:99\r\n0018A45C4D1DEF81644B54AB7F969B88D65:1".into(),
+        body: "1E4C9B93F3F0682250B6CF8331B7EE68FD8:99\r\n0018A45C4D1DEF81644B54AB7F969B88D65:1"
+            .into(),
         seen_prefix: RefCell::new(String::new()),
     };
     let count = pwned_count(&fake, "password").unwrap();
