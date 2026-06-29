@@ -120,7 +120,31 @@ fn run() -> Result<()> {
             println!("{code}");
             eprintln!("Valid for {remaining}s");
         }
-        Command::Check { .. } => unimplemented!("check — Task 11"),
+        Command::Check { name } => {
+            let password: Zeroizing<String> = if let Some(entry_name) = name {
+                let master = prompt_master()?;
+                let entry = commands::cmd_get(&store, master.as_bytes(), &entry_name)?;
+                Zeroizing::new(entry.password)
+            } else {
+                Zeroizing::new(
+                    rpassword::prompt_password("Password to check: ").map_err(Error::Io)?,
+                )
+            };
+            match commands::cmd_check(password.as_str()) {
+                Ok(count) if count > 0 => {
+                    eprintln!(
+                        "WARNING: this password has appeared {count} time(s) in known data breaches. Change it now."
+                    );
+                }
+                Ok(_) => {
+                    println!("not found in known breaches.");
+                }
+                Err(Error::Network(msg)) => {
+                    eprintln!("warning: HIBP check failed (network): {msg}");
+                }
+                Err(e) => return Err(e),
+            }
+        }
     }
     Ok(())
 }

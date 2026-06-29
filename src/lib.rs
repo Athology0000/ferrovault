@@ -6,6 +6,7 @@ pub mod commands;
 pub mod crypto;
 pub mod format;
 pub mod generator;
+pub mod hibp;
 pub mod model;
 pub mod totp;
 pub mod vault;
