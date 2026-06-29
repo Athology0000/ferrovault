@@ -3,6 +3,12 @@
 **/*.rs.bk
 Cargo.lock.orig
 
+# Local-only MSVC build environment injection (machine-specific)
+/.cargo/
+
+# SDD orchestration scratch (ledger, briefs, review packages)
+/.superpowers/
+
 # Vaults / secrets — never commit a real vault
 *.pvlt
 .ferrovault/
