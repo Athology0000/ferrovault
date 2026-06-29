@@ -48,7 +48,10 @@ fn run() -> Result<()> {
             let master = prompt_master()?;
             let username = read_line(&format!("Username for {name}: "));
             let password: Zeroizing<String> = if generate {
-                unimplemented!("generate — implemented in Task 7")
+                ferrovault::generator::generate(&ferrovault::generator::GenOptions {
+                    length: 20,
+                    symbols: true,
+                })?
             } else {
                 Zeroizing::new(
                     rpassword::prompt_password(format!("Password for {name} (hidden): "))
@@ -97,7 +100,13 @@ fn run() -> Result<()> {
             commands::cmd_delete(&store, master.as_bytes(), &name)?;
             eprintln!("Deleted entry: {name}");
         }
-        Command::Gen { .. } => unimplemented!("gen — implemented in Task 7"),
+        Command::Gen { length, no_symbols } => {
+            let pw = ferrovault::generator::generate(&ferrovault::generator::GenOptions {
+                length,
+                symbols: !no_symbols,
+            })?;
+            println!("{}", pw.as_str());
+        }
         Command::ChangePassword => unimplemented!("change-password — Task 8"),
         Command::Totp { .. } => unimplemented!("totp — Task 9"),
         Command::Check { .. } => unimplemented!("check — Task 11"),

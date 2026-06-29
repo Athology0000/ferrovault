@@ -4,6 +4,7 @@ pub mod cli;
 pub mod commands;
 pub mod crypto;
 pub mod format;
+pub mod generator;
 pub mod model;
 pub mod vault;
 
