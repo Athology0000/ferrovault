@@ -1,8 +1,9 @@
 //! Thin binary: parse args, prompt for secrets, dispatch, render, map errors.
 
 use clap::Parser;
-use ferrovault::cli::{Cli, Command};
+use ferrovault::cli::{Cli, Command, ConfigAction};
 use ferrovault::commands::{self, default_vault_path, exit_code};
+use ferrovault::config::{Config, UiMode};
 use ferrovault::model::Entry;
 use ferrovault::vault::VaultStore;
 use ferrovault::{Error, Result};
@@ -158,6 +159,38 @@ fn run() -> Result<()> {
                 Err(e) => return Err(e),
             }
         }
+        Command::Ui { gui, tui } => {
+            let mode = if gui {
+                UiMode::Gui
+            } else if tui {
+                UiMode::Tui
+            } else {
+                Config::load(&Config::default_path()).unwrap_or_default().ui
+            };
+            match mode {
+                UiMode::Gui => {
+                    eprintln!("GUI not built yet — run with --tui or set 'config ui tui'");
+                }
+                UiMode::Tui => {
+                    let master = prompt_master()?;
+                    let tui_store = VaultStore::new(default_vault_path());
+                    ferrovault::tui::run(&tui_store, master.as_bytes())?;
+                }
+            }
+        }
+        Command::Config { action } => match action {
+            ConfigAction::Show => {
+                let cfg = Config::load(&Config::default_path()).unwrap_or_default();
+                println!("{}", cfg.ui.as_str());
+            }
+            ConfigAction::Ui { mode } => {
+                let ui_mode = UiMode::parse(&mode)?;
+                let mut cfg = Config::load(&Config::default_path()).unwrap_or_default();
+                cfg.ui = ui_mode;
+                cfg.save(&Config::default_path())?;
+                eprintln!("UI mode set to {}", cfg.ui.as_str());
+            }
+        },
     }
     Ok(())
 }

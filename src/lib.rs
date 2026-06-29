@@ -3,12 +3,14 @@
 pub mod cli;
 pub mod clipboard;
 pub mod commands;
+pub mod config;
 pub mod crypto;
 pub mod format;
 pub mod generator;
 pub mod hibp;
 pub mod model;
 pub mod totp;
+pub mod tui;
 pub mod vault;
 
 use std::path::PathBuf;

@@ -53,4 +53,26 @@ pub enum Command {
     Totp { name: String },
     /// Check a password against Have I Been Pwned (k-anonymity).
     Check { name: Option<String> },
+    /// Launch the interactive UI (TUI by default).
+    Ui {
+        /// Force the graphical desktop UI.
+        #[arg(long)]
+        gui: bool,
+        /// Force the terminal UI.
+        #[arg(long)]
+        tui: bool,
+    },
+    /// Manage persistent configuration.
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum ConfigAction {
+    /// Show current configuration.
+    Show,
+    /// Set the default UI mode (tui or gui).
+    Ui { mode: String },
 }
