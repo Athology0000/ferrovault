@@ -3,10 +3,10 @@
 An encrypted command-line password manager written in Rust: one master
 password, one vault file, applied cryptography done correctly.
 
-[![CI](https://github.com/althology/ferrovault/actions/workflows/ci.yml/badge.svg)](https://github.com/althology/ferrovault/actions/workflows/ci.yml)
+[![CI](https://github.com/Athology0000/ferrovault/actions/workflows/ci.yml/badge.svg)](https://github.com/Athology0000/ferrovault/actions/workflows/ci.yml)
 
-> **Note:** The badge resolves once this repo is pushed to
-> `github.com/althology/ferrovault`. Adjust the username if your GitHub handle differs.
+> **Note:** The badge resolves once GitHub Actions runs on
+> `github.com/Athology0000/ferrovault`.
 
 ---
 
