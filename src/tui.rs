@@ -5,7 +5,7 @@ use crate::Result;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap};
+use ratatui::widgets::{Block, BorderType, Borders, List, ListItem, ListState, Paragraph, Wrap};
 use ratatui::Frame;
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -70,19 +70,28 @@ pub fn draw(f: &mut Frame, st: &UiState) {
     // ── Header ──────────────────────────────────────────────────────────────
     let filtered = st.filtered_indices();
     let count = filtered.len();
-    let header_text = format!(" ferrovault  │  {}  │  {} entries", st.vault_path, count);
-    let search_suffix = if !st.query.is_empty() {
-        format!("  │  search: {}", st.query)
-    } else {
-        String::new()
-    };
-    let header = Paragraph::new(format!("{}{}", header_text, search_suffix))
-        .style(
+    let dim = Style::default().fg(Color::DarkGray);
+    let mut header_spans = vec![
+        Span::styled(
+            "▌ ferrovault ",
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
-        )
-        .block(Block::default().borders(Borders::BOTTOM));
+        ),
+        Span::styled("│ ", dim),
+        Span::styled(st.vault_path.clone(), Style::default().fg(Color::White)),
+        Span::styled("  │ ", dim),
+        Span::styled(format!("{count} entries"), dim),
+    ];
+    if !st.query.is_empty() {
+        header_spans.push(Span::styled("  │ ", dim));
+        header_spans.push(Span::styled(
+            format!("search: {}", st.query),
+            Style::default().fg(Color::Yellow),
+        ));
+    }
+    let header = Paragraph::new(Line::from(header_spans))
+        .block(Block::default().borders(Borders::BOTTOM).border_style(dim));
     f.render_widget(header, outer[0]);
 
     // ── Body: left list + right detail ──────────────────────────────────────
@@ -93,9 +102,20 @@ pub fn draw(f: &mut Frame, st: &UiState) {
 
     // Left: entry list
     if st.entries.is_empty() {
-        let empty = Paragraph::new("  No entries yet.\n  Press 'a' to add one.")
+        let empty = Paragraph::new("\n  No entries yet.\n  Press 'a' to add one.")
             .style(Style::default().fg(Color::DarkGray))
-            .block(Block::default().borders(Borders::ALL).title("Entries"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::DarkGray))
+                    .title(Span::styled(
+                        " Entries ",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )),
+            );
         f.render_widget(empty, body[0]);
     } else {
         let items: Vec<ListItem> = filtered
@@ -117,7 +137,7 @@ pub fn draw(f: &mut Frame, st: &UiState) {
                 let user_style = Style::default().fg(Color::DarkGray);
                 let _ = vis_idx; // suppressed
                 ListItem::new(Line::from(vec![
-                    Span::styled(format!("  {}", e.name), name_style),
+                    Span::styled(e.name.clone(), name_style),
                     Span::raw("  "),
                     Span::styled(e.username.clone(), user_style),
                 ]))
@@ -129,13 +149,39 @@ pub fn draw(f: &mut Frame, st: &UiState) {
             list_state.select(Some(st.selected.min(filtered.len() - 1)));
         }
         let list = List::new(items)
-            .block(Block::default().borders(Borders::ALL).title("Entries"))
-            .highlight_style(Style::default().bg(Color::DarkGray));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::DarkGray))
+                    .title(Span::styled(
+                        " Entries ",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )),
+            )
+            .highlight_style(
+                Style::default()
+                    .bg(Color::DarkGray)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol("▌ ");
         f.render_stateful_widget(list, body[0], &mut list_state);
     }
 
     // Right: detail pane
-    let detail_block = Block::default().borders(Borders::ALL).title("Detail");
+    let detail_block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .padding(ratatui::widgets::Padding::new(1, 1, 1, 0))
+        .title(Span::styled(
+            " Detail ",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ));
     if st.entries.is_empty() || filtered.is_empty() {
         let detail = Paragraph::new("Select an entry to view details.")
             .style(Style::default().fg(Color::DarkGray))
@@ -222,8 +268,36 @@ pub fn draw(f: &mut Frame, st: &UiState) {
     f.render_widget(status, outer[2]);
 
     // ── Footer / key hints ───────────────────────────────────────────────────
-    let hint = "  ↑/↓ navigate  /search  Enter/Space reveal  c copy-pw  u copy-user  t copy-totp  a add  d delete  q quit";
-    let footer = Paragraph::new(hint).style(Style::default().fg(Color::DarkGray));
+    let key = |s: &str| {
+        Span::styled(
+            s.to_string(),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
+    };
+    let lbl = |s: &str| Span::styled(s.to_string(), Style::default().fg(Color::DarkGray));
+    let footer = Paragraph::new(Line::from(vec![
+        lbl(" "),
+        key("↑↓"),
+        lbl(" move  "),
+        key("/"),
+        lbl(" search  "),
+        key("⏎"),
+        lbl(" reveal  "),
+        key("c"),
+        lbl(" copy  "),
+        key("u"),
+        lbl(" user  "),
+        key("t"),
+        lbl(" totp  "),
+        key("a"),
+        lbl(" add  "),
+        key("d"),
+        lbl(" del  "),
+        key("q"),
+        lbl(" quit"),
+    ]));
     f.render_widget(footer, outer[3]);
 }
 

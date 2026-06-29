@@ -16,3 +16,6 @@ Cargo.lock.orig
 # OS
 .DS_Store
 Thumbs.db
+
+# Review screenshots (regenerated via tui_png example)
+/screenshots/
