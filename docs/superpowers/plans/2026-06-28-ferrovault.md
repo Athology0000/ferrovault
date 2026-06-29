@@ -16,7 +16,7 @@
 - **License:** MIT. Include `ATTRIBUTION.md` crediting the curriculum, stating nothing was copied.
 - **KDF defaults:** Argon2id `m_cost = 65536` KiB, `t_cost = 3`, `p_cost = 4`, 16-byte salt.
 - **Crypto invariants:** fresh random 12-byte nonce on **every** write; never accept the master password from a CLI flag or env var; decrypt failure and tamper both surface as the single `WrongPasswordOrCorrupt` error.
-- **Secrets:** master password, derived key, and decrypted plaintext live in `Zeroizing` wrappers.
+- **Secrets:** master password, derived key, and decrypted plaintext live in `Zeroizing` wrappers. Secret-bearing types (`Entry`, `Vault`) must **NOT** derive `Debug`/`Display` (passwords would leak via `{:?}`/logs/panics). In tests, assert error cases with `matches!(expr, Err(Error::X))`, never `.unwrap_err()` on a `Result` whose `Ok` contains `Entry`/`Vault`.
 - **Vault paths in tests:** always use `tempfile::tempdir()` — never touch the user's real vault.
 - **Commit cadence:** one commit per task (after its tests pass).
 
@@ -749,7 +749,7 @@ fn create_twice_fails() {
 fn open_missing_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("nope.pvlt"));
-    assert!(matches!(store.open(b"m").unwrap_err(), Error::VaultNotFound(_)));
+    assert!(matches!(store.open(b"m"), Err(Error::VaultNotFound(_))));
 }
 
 #[test]
@@ -757,7 +757,7 @@ fn wrong_password_fails() {
     let dir = tempdir().unwrap();
     let store = VaultStore::new(dir.path().join("vault.pvlt"));
     store.create(b"right").unwrap();
-    assert!(matches!(store.open(b"wrong").unwrap_err(), Error::WrongPasswordOrCorrupt));
+    assert!(matches!(store.open(b"wrong"), Err(Error::WrongPasswordOrCorrupt)));
 }
 
 #[test]
@@ -1025,7 +1025,7 @@ fn init_add_get_list_delete() {
     assert_eq!(commands::cmd_list(&store, b"m").unwrap(), vec!["github".to_string()]);
 
     commands::cmd_delete(&store, b"m", "github").unwrap();
-    assert!(matches!(commands::cmd_get(&store, b"m", "github").unwrap_err(), Error::EntryNotFound(_)));
+    assert!(matches!(commands::cmd_get(&store, b"m", "github"), Err(Error::EntryNotFound(_))));
 }
 
 #[test]
@@ -1526,7 +1526,7 @@ fn rotates_master_password() {
 
     commands::cmd_change_password(&store, b"old", b"new").unwrap();
 
-    assert!(matches!(store.open(b"old").unwrap_err(), Error::WrongPasswordOrCorrupt));
+    assert!(matches!(store.open(b"old"), Err(Error::WrongPasswordOrCorrupt)));
     let (vault, _) = store.open(b"new").unwrap();
     assert!(vault.entries.contains_key("x"));
 }
