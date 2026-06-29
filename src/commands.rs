@@ -66,6 +66,14 @@ pub fn cmd_change_password(store: &VaultStore, old: &[u8], new: &[u8]) -> Result
     store.rewrite(new, &params, &vault)
 }
 
+/// Current TOTP code for an entry that has a stored secret.
+pub fn cmd_totp(store: &VaultStore, master: &[u8], name: &str) -> Result<(String, u64)> {
+    let entry = cmd_get(store, master, name)?;
+    let secret = entry.totp.ok_or(Error::Totp)?;
+    let now = OffsetDateTime::now_utc().unix_timestamp().max(0) as u64;
+    crate::totp::current_code(&secret, now)
+}
+
 pub fn exit_code(err: &Error) -> i32 {
     match err {
         Error::VaultNotFound(_) => 3,

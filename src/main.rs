@@ -113,7 +113,12 @@ fn run() -> Result<()> {
             commands::cmd_change_password(&store, old.as_bytes(), new.as_bytes())?;
             eprintln!("Master password changed.");
         }
-        Command::Totp { .. } => unimplemented!("totp — Task 9"),
+        Command::Totp { name } => {
+            let master = prompt_master()?;
+            let (code, remaining) = commands::cmd_totp(&store, master.as_bytes(), &name)?;
+            println!("{code}");
+            eprintln!("Valid for {remaining}s");
+        }
         Command::Check { .. } => unimplemented!("check — Task 11"),
     }
     Ok(())
