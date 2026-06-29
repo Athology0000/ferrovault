@@ -20,6 +20,7 @@ fn hotp_value(key: &[u8], counter: u64) -> u32 {
 
 /// TOTP code for a raw key at a given unix time.
 pub fn totp_code(key: &[u8], unix_seconds: u64, period: u64, digits: u32) -> String {
+    debug_assert!(digits <= 9, "digits must be <= 9 so 10^digits fits in u32");
     let counter = unix_seconds / period;
     let value = hotp_value(key, counter) % 10u32.pow(digits);
     format!("{:0width$}", value, width = digits as usize)

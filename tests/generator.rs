@@ -50,3 +50,28 @@ fn no_symbols_excludes_symbols() {
         assert!(pw.chars().all(|c| c.is_ascii_alphanumeric()));
     }
 }
+
+#[test]
+fn succeeds_at_minimum_length() {
+    // With symbols the minimum length is 4 (one per required class); each class
+    // must be present at the exact boundary.
+    let pw = generate(&GenOptions {
+        length: 4,
+        symbols: true,
+    })
+    .unwrap();
+    assert_eq!(pw.chars().count(), 4);
+    assert!(pw.chars().any(|c| c.is_ascii_lowercase()));
+    assert!(pw.chars().any(|c| c.is_ascii_uppercase()));
+    assert!(pw.chars().any(|c| c.is_ascii_digit()));
+    assert!(pw.chars().any(|c| !c.is_ascii_alphanumeric()));
+
+    // Without symbols the minimum length is 3.
+    let pw = generate(&GenOptions {
+        length: 3,
+        symbols: false,
+    })
+    .unwrap();
+    assert_eq!(pw.chars().count(), 3);
+    assert!(pw.chars().all(|c| c.is_ascii_alphanumeric()));
+}

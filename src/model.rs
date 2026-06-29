@@ -36,7 +36,7 @@ impl Drop for Vault {
 
 pub fn to_cbor(v: &Vault) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
-    ciborium::ser::into_writer(v, &mut buf).map_err(|_| Error::Crypto)?;
+    ciborium::ser::into_writer(v, &mut buf).map_err(|_| Error::Serialize("cbor encode"))?;
     Ok(buf)
 }
 

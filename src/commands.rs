@@ -2,6 +2,7 @@
 //! without TTY prompts; `main.rs` does the prompting and rendering.
 
 use crate::crypto::KdfParams;
+use crate::hibp::{pwned_count, HttpFetcher};
 use crate::model::Entry;
 use crate::vault::VaultStore;
 use crate::{Error, Result};
@@ -77,7 +78,6 @@ pub fn cmd_totp(store: &VaultStore, master: &[u8], name: &str) -> Result<(String
 /// Online breach check for a password (k-anonymity). Network failure surfaces
 /// as `Error::Network`; the caller decides whether to treat it as fatal.
 pub fn cmd_check(password: &str) -> Result<u64> {
-    use crate::hibp::{pwned_count, HttpFetcher};
     pwned_count(&HttpFetcher, password)
 }
 
@@ -96,5 +96,6 @@ pub fn exit_code(err: &Error) -> i32 {
         Error::Totp => 13,
         Error::TooShort(_) => 14,
         Error::Crypto => 15,
+        Error::Serialize(_) => 16,
     }
 }

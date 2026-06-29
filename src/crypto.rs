@@ -19,7 +19,7 @@ pub struct KdfParams {
 impl KdfParams {
     pub const DEFAULT_M: u32 = 65536; // 64 MiB
     pub const DEFAULT_T: u32 = 3;
-    pub const DEFAULT_P: u32 = 4;
+    pub const DEFAULT_P: u8 = 4;
 
     /// Fresh default-strength parameters with a new random salt.
     pub fn generate_default() -> Self {
@@ -28,7 +28,7 @@ impl KdfParams {
         KdfParams {
             m_cost: Self::DEFAULT_M,
             t_cost: Self::DEFAULT_T,
-            p_cost: Self::DEFAULT_P as u8,
+            p_cost: Self::DEFAULT_P,
             salt,
         }
     }
@@ -37,7 +37,7 @@ impl KdfParams {
     pub fn is_weaker_than_default(&self) -> bool {
         self.m_cost < Self::DEFAULT_M
             || self.t_cost < Self::DEFAULT_T
-            || (self.p_cost as u32) < Self::DEFAULT_P
+            || self.p_cost < Self::DEFAULT_P
     }
 }
 

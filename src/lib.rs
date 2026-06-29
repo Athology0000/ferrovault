@@ -41,6 +41,8 @@ pub enum Error {
     TooShort(usize),
     #[error("cryptography error")]
     Crypto,
+    #[error("serialization error: {0}")]
+    Serialize(&'static str),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
