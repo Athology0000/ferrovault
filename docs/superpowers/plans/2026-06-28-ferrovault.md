@@ -6,11 +6,12 @@
 
 **Architecture:** A library crate (`src/lib.rs` + modules) holds all logic; a thin binary (`src/main.rs`) parses arguments and dispatches. The whole vault is encrypted as one unit: a custom binary header (which doubles as the AES-GCM AAD) followed by AES-256-GCM ciphertext whose plaintext is the CBOR-serialized entry map. Command handlers take already-obtained secrets as parameters so they are unit-testable without TTY prompts.
 
-**Tech Stack:** Rust 2021, RustCrypto (`argon2`, `aes-gcm`, `hmac`, `sha1`), `ciborium` (CBOR), `clap` (derive), `rpassword`, `zeroize`, `fd-lock`, `arboard`, `ureq`, `base32`, `rand`, `thiserror`, `dirs`, `time`. Dev: `assert_cmd`, `predicates`, `tempfile`.
+**Tech Stack:** Rust 2021, RustCrypto (`argon2`, `aes-gcm`, `hmac`, `sha1`), `ciborium` (CBOR), `clap` (derive), `rpassword`, `zeroize`, `fd-lock`, `arboard`, `attohttpc` (native-TLS, no `ring`/C), `base32`, `rand`, `thiserror`, `dirs`, `time`. Dev: `assert_cmd`, `predicates`, `tempfile`.
 
 ## Global Constraints
 
-- **Edition:** Rust 2021. Pure-Rust dependencies only — **no C build dependencies** (must build cleanly on Windows/MSVC).
+- **Edition:** Rust 2021. Pure-Rust dependencies only — **no C build dependencies** (must build cleanly on Windows/MSVC). HIBP uses `attohttpc` with OS-native TLS (not `ureq`/`ring`) to honor this.
+- **Local build env (do not commit):** a git-ignored `.cargo/config.toml` injects the MSVC linker path + `vcvars` env so `cargo` works in this shell; it is machine-specific and intentionally untracked. Run `cargo` commands normally from the repo root.
 - **Clean-room rule:** No source code, tests, rule tables, or fixtures copied from `CarterPerez-dev/Cybersecurity-Projects`. Re-derive from primary specs (Argon2, AES-GCM, RFC 6238, HIBP k-anonymity).
 - **License:** MIT. Include `ATTRIBUTION.md` crediting the curriculum, stating nothing was copied.
 - **KDF defaults:** Argon2id `m_cost = 65536` KiB, `t_cost = 3`, `p_cost = 4`, 16-byte salt.
@@ -57,7 +58,7 @@ rpassword = "7"
 zeroize = "1"
 fd-lock = "4"
 arboard = "3"
-ureq = "2"
+attohttpc = { version = "0.28", default-features = false, features = ["tls-native"] }
 hmac = "0.12"
 sha1 = "0.10"
 base32 = "0.5"
@@ -1799,7 +1800,7 @@ git commit -m "feat: clipboard copy with timed auto-clear"
 **Interfaces:**
 - Produces:
   - `pub trait RangeFetcher { fn fetch(&self, prefix: &str) -> Result<String>; }`
-  - `pub struct UreqFetcher;` implementing `RangeFetcher`
+  - `pub struct HttpFetcher;` implementing `RangeFetcher`
   - `pub fn pwned_count(fetcher: &impl RangeFetcher, password: &str) -> Result<u64>`
   - In `commands.rs`: `pub fn cmd_check(password: &str) -> Result<u64>`
 
@@ -1868,13 +1869,18 @@ pub trait RangeFetcher {
     fn fetch(&self, prefix: &str) -> Result<String>;
 }
 
-pub struct UreqFetcher;
+pub struct HttpFetcher;
 
-impl RangeFetcher for UreqFetcher {
+impl RangeFetcher for HttpFetcher {
     fn fetch(&self, prefix: &str) -> Result<String> {
         let url = format!("https://api.pwnedpasswords.com/range/{prefix}");
-        let resp = ureq::get(&url).call().map_err(|e| Error::Network(e.to_string()))?;
-        resp.into_string().map_err(|e| Error::Network(e.to_string()))
+        let resp = attohttpc::get(&url)
+            .send()
+            .map_err(|e| Error::Network(e.to_string()))?;
+        if !resp.is_success() {
+            return Err(Error::Network(format!("HTTP {}", resp.status())));
+        }
+        resp.text().map_err(|e| Error::Network(e.to_string()))
     }
 }
 
@@ -1914,12 +1920,12 @@ Expected: both tests PASS.
 - [ ] **Step 6: Add `cmd_check` to `src/commands.rs`**
 
 ```rust
-use crate::hibp::{pwned_count, UreqFetcher};
+use crate::hibp::{pwned_count, HttpFetcher};
 
 /// Online breach check for a password (k-anonymity). Network failure surfaces
 /// as `Error::Network`; the caller decides whether to treat it as fatal.
 pub fn cmd_check(password: &str) -> Result<u64> {
-    pwned_count(&UreqFetcher, password)
+    pwned_count(&HttpFetcher, password)
 }
 ```
 

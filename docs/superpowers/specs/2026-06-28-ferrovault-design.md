@@ -153,7 +153,7 @@ src/
   vault.rs      // lock -> read -> decode -> decrypt -> CBOR; CRUD; atomic write
   generator.rs  // OsRng password generation; class guarantees; no modulo bias
   totp.rs       // RFC 6238 (hand-rolled HMAC-SHA1 + base32 decode)
-  hibp.rs       // SHA-1 prefix range query (ureq); k-anonymity
+  hibp.rs       // SHA-1 prefix range query (attohttpc, native TLS); k-anonymity
   clipboard.rs  // arboard copy + timed auto-clear
   cli.rs        // clap (derive): Args + Commands
   commands.rs   // command handlers
@@ -258,7 +258,7 @@ A single `thiserror` enum at the library boundary:
 | `zeroize` | Best-effort secret wiping |
 | `fd-lock` | Cross-platform advisory file locking |
 | `arboard` | Cross-platform clipboard |
-| `ureq` | Blocking HTTP for HIBP (light, pure-Rust TLS) |
+| `attohttpc` | Blocking HTTP for HIBP, `tls-native` feature (OS-native TLS: schannel on Windows) — avoids `ring`/C, keeping the build pure-Rust |
 | `hmac`, `sha1` | TOTP HMAC-SHA1 (RFC 6238) and HIBP prefix hashing (both use SHA-1) |
 | `base32` | TOTP secret decoding |
 | `rand` / `getrandom` | `OsRng` for salts, nonces, password generation |
