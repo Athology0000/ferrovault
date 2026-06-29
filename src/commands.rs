@@ -1,6 +1,7 @@
 //! Command handlers. These take already-obtained secrets so they are testable
 //! without TTY prompts; `main.rs` does the prompting and rendering.
 
+use crate::crypto::KdfParams;
 use crate::model::Entry;
 use crate::vault::VaultStore;
 use crate::{Error, Result};
@@ -56,6 +57,13 @@ pub fn cmd_delete(store: &VaultStore, master: &[u8], name: &str) -> Result<()> {
         }
         Ok(())
     })
+}
+
+/// Re-encrypt the entire vault under a fresh salt + current default KDF params.
+pub fn cmd_change_password(store: &VaultStore, old: &[u8], new: &[u8]) -> Result<()> {
+    let (vault, _params) = store.open(old)?; // verifies the old password
+    let params = KdfParams::generate_default();
+    store.rewrite(new, &params, &vault)
 }
 
 pub fn exit_code(err: &Error) -> i32 {

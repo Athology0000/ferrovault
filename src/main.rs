@@ -107,7 +107,12 @@ fn run() -> Result<()> {
             })?;
             println!("{}", pw.as_str());
         }
-        Command::ChangePassword => unimplemented!("change-password — Task 8"),
+        Command::ChangePassword => {
+            let old = prompt_master()?;
+            let new = prompt_new_master()?;
+            commands::cmd_change_password(&store, old.as_bytes(), new.as_bytes())?;
+            eprintln!("Master password changed.");
+        }
         Command::Totp { .. } => unimplemented!("totp — Task 9"),
         Command::Check { .. } => unimplemented!("check — Task 11"),
     }
