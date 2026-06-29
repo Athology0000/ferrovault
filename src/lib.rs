@@ -1,5 +1,7 @@
 //! ferrovault — encrypted command-line password manager (library core).
 
+pub mod crypto;
+
 use std::path::PathBuf;
 
 #[derive(thiserror::Error, Debug)]
