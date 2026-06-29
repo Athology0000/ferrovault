@@ -1,0 +1,12 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock.orig
+
+# Vaults / secrets — never commit a real vault
+*.pvlt
+.ferrovault/
+
+# OS
+.DS_Store
+Thumbs.db
