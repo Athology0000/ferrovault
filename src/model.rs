@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use zeroize::Zeroize;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub username: String,
     pub password: String,
@@ -17,7 +17,7 @@ pub struct Entry {
     pub updated: String,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Vault {
     pub version: u32,
     /// BTreeMap → deterministic, sorted serialization.
