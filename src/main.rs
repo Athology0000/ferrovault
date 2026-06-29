@@ -16,7 +16,8 @@ fn prompt_master() -> Result<Zeroizing<String>> {
 
 fn prompt_new_master() -> Result<Zeroizing<String>> {
     let a = Zeroizing::new(rpassword::prompt_password("New master password: ").map_err(Error::Io)?);
-    let b = Zeroizing::new(rpassword::prompt_password("Confirm master password: ").map_err(Error::Io)?);
+    let b =
+        Zeroizing::new(rpassword::prompt_password("Confirm master password: ").map_err(Error::Io)?);
     if a.as_str() != b.as_str() {
         eprintln!("Passwords do not match.");
         std::process::exit(2);
@@ -44,7 +45,11 @@ fn run() -> Result<()> {
             commands::cmd_init(&store, master.as_bytes())?;
             eprintln!("Vault created at {}", store.path().display());
         }
-        Command::Add { name, generate, totp } => {
+        Command::Add {
+            name,
+            generate,
+            totp,
+        } => {
             let master = prompt_master()?;
             let username = read_line(&format!("Username for {name}: "));
             let password: Zeroizing<String> = if generate {
@@ -73,12 +78,20 @@ fn run() -> Result<()> {
             commands::cmd_add(&store, master.as_bytes(), &name, entry)?;
             eprintln!("Added entry: {name}");
         }
-        Command::Get { name, copy, timeout } => {
+        Command::Get {
+            name,
+            copy,
+            timeout,
+        } => {
             let master = prompt_master()?;
             let entry = commands::cmd_get(&store, master.as_bytes(), &name)?;
             if copy {
                 ferrovault::clipboard::copy_with_clear(&entry.password, timeout)?;
-                eprintln!("Password copied; clipboard clears in {timeout}s.");
+                if timeout > 0 {
+                    eprintln!("Password copied; clipboard clears in {timeout}s.");
+                } else {
+                    eprintln!("Password copied to clipboard (no auto-clear).");
+                }
             } else {
                 println!("username  {}", entry.username);
                 println!("password  {}", entry.password);

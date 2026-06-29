@@ -15,7 +15,10 @@ fn sample() -> Vault {
             updated: "2026-06-28T00:00:00Z".into(),
         },
     );
-    Vault { version: 1, entries }
+    Vault {
+        version: 1,
+        entries,
+    }
 }
 
 #[test]
@@ -32,11 +35,14 @@ fn cbor_round_trip() {
 }
 
 #[test]
-fn cbor_is_smaller_than_json_and_not_text() {
+fn cbor_output_is_not_json() {
     let v = sample();
     let bytes = model::to_cbor(&v).unwrap();
-    // CBOR is binary: the password should not appear as a contiguous ASCII run
-    // surrounded by JSON quotes. Sanity check that we did not accidentally emit JSON.
+    // Sanity-check that we emitted binary CBOR and not JSON. This does NOT imply
+    // secrets are hidden in the serialised bytes — CBOR stores text strings as
+    // literal UTF-8, so field values are present in the plaintext payload.
+    // Secret confidentiality is provided by AES-256-GCM encryption at rest, not
+    // by the choice of serialisation format.
     assert!(!bytes.starts_with(b"{"));
 }
 

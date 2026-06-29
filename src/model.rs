@@ -28,6 +28,8 @@ impl Drop for Vault {
     fn drop(&mut self) {
         for e in self.entries.values_mut() {
             e.password.zeroize();
+            e.totp.zeroize();
+            e.notes.zeroize();
         }
     }
 }

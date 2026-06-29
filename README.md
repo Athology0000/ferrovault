@@ -41,7 +41,7 @@ ferrovault --vault ./demo.pvlt add github
 ferrovault --vault ./demo.pvlt list
 ferrovault --vault ./demo.pvlt get github --copy
 ferrovault --vault ./demo.pvlt check github
-rm ./demo.pvlt ./demo.pvlt.lock
+rm ./demo.pvlt ./demo.pvlt.lock   # POSIX; on Windows: del demo.pvlt demo.pvlt.lock
 ```
 
 ---
@@ -71,9 +71,11 @@ cargo clippy --all-targets -- -D warnings
 cargo fmt --all
 ```
 
-Requires Rust stable (1.80+). No C build toolchain needed — all dependencies
-are pure Rust or use OS-native TLS (SChannel on Windows, Security framework on
-macOS).
+Requires Rust stable (1.80+). Windows and macOS need no C build toolchain —
+TLS is provided by OS-native SChannel (Windows) and Security.framework (macOS).
+**Linux** links the system OpenSSL via `openssl-sys` and therefore requires a C
+toolchain and OpenSSL development headers (e.g. `libssl-dev` on Debian/Ubuntu,
+`openssl-devel` on Fedora).
 
 ---
 
