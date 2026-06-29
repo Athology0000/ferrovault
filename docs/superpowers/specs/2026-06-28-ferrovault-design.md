@@ -259,8 +259,7 @@ A single `thiserror` enum at the library boundary:
 | `fd-lock` | Cross-platform advisory file locking |
 | `arboard` | Cross-platform clipboard |
 | `ureq` | Blocking HTTP for HIBP (light, pure-Rust TLS) |
-| `hmac`, `sha1` | TOTP (RFC 6238) |
-| `sha2` | HIBP prefix hashing uses SHA-1 (`sha1`); `sha2` only if needed elsewhere |
+| `hmac`, `sha1` | TOTP HMAC-SHA1 (RFC 6238) and HIBP prefix hashing (both use SHA-1) |
 | `base32` | TOTP secret decoding |
 | `rand` / `getrandom` | `OsRng` for salts, nonces, password generation |
 | `thiserror` | Error enum |
