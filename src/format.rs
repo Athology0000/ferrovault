@@ -32,7 +32,7 @@ pub fn encode_header(p: &KdfParams, nonce: &[u8; 12], ct_len: u64) -> Vec<u8> {
     h.extend_from_slice(&p.m_cost.to_le_bytes());
     h.extend_from_slice(&p.t_cost.to_le_bytes());
     h.push(p.p_cost);
-    h.push(p.salt.len() as u8);
+    h.push(SALT_LEN as u8);
     h.extend_from_slice(&p.salt);
     h.extend_from_slice(nonce);
     h.extend_from_slice(&ct_len.to_le_bytes());
@@ -49,7 +49,7 @@ pub fn encode(p: &KdfParams, nonce: &[u8; 12], ciphertext: &[u8]) -> Vec<u8> {
 /// Parse a vault file. Bounds-checked: malformed input returns `BadFormat`,
 /// never panics.
 pub fn decode(b: &[u8]) -> Result<Decoded> {
-    // Smallest valid file (16-byte salt): 4+1+1+4+4+1+1+16+12+8 = 52 header bytes.
+    // The `b.len() < 16` guard lets us safely read `salt_len` at `b[15]`; the full 52-byte header is bounds-checked below.
     if b.len() < 16 || &b[0..4] != MAGIC {
         return Err(Error::BadFormat("bad magic or too short"));
     }
@@ -76,7 +76,9 @@ pub fn decode(b: &[u8]) -> Result<Decoded> {
     salt.copy_from_slice(&b[16..salt_end]);
     let mut nonce = [0u8; 12];
     nonce.copy_from_slice(&b[salt_end..nonce_end]);
-    let ct_len = u64::from_le_bytes(b[nonce_end..ctlen_end].try_into().unwrap()) as usize;
+    let ct_len: usize = u64::from_le_bytes(b[nonce_end..ctlen_end].try_into().unwrap())
+        .try_into()
+        .map_err(|_| Error::BadFormat("ciphertext length out of range"))?;
     let ct_start = ctlen_end;
     let ct_end = ct_start
         .checked_add(ct_len)
