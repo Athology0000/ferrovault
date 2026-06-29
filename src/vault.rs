@@ -4,9 +4,9 @@ use crate::crypto::{self, KdfParams};
 use crate::model::{self, Vault};
 use crate::{format, Error, Result};
 use rand::RngCore;
-use std::fs::OpenOptions;
 #[cfg(unix)]
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use zeroize::Zeroizing;
@@ -44,6 +44,7 @@ impl VaultStore {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(false)
             .open(self.lock_path())?;
         let mut lock = fd_lock::RwLock::new(file);
         let _guard = lock.write().map_err(|_| Error::Locked)?;
@@ -55,7 +56,10 @@ impl VaultStore {
             if self.path.exists() {
                 return Err(Error::VaultExists(self.path.clone()));
             }
-            let vault = Vault { version: 1, entries: Default::default() };
+            let vault = Vault {
+                version: 1,
+                entries: Default::default(),
+            };
             let params = KdfParams::generate_default();
             self.write_locked(master, &params, &vault)
         })
@@ -117,7 +121,10 @@ impl VaultStore {
 
 /// tmp file (0600 on Unix) → fsync → atomic rename → dir fsync (POSIX).
 fn atomic_write(path: &Path, data: &[u8]) -> Result<()> {
-    let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
     std::fs::create_dir_all(parent)?;
     let file_name = path.file_name().ok_or(Error::BadFormat("no file name"))?;
     let tmp = parent.join(format!(".{}.tmp", file_name.to_string_lossy()));

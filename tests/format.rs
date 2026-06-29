@@ -3,7 +3,12 @@ use ferrovault::format;
 use ferrovault::Error;
 
 fn params() -> KdfParams {
-    KdfParams { m_cost: 65536, t_cost: 3, p_cost: 4, salt: [9u8; 16] }
+    KdfParams {
+        m_cost: 65536,
+        t_cost: 3,
+        p_cost: 4,
+        salt: [9u8; 16],
+    }
 }
 
 #[test]
@@ -23,19 +28,25 @@ fn round_trip() {
 
 #[test]
 fn rejects_empty() {
-    assert!(matches!(format::decode(&[]).unwrap_err(), Error::BadFormat(_)));
+    assert!(matches!(
+        format::decode(&[]).unwrap_err(),
+        Error::BadFormat(_)
+    ));
 }
 
 #[test]
 fn rejects_bad_magic() {
     let mut b = format::encode(&params(), &[0u8; 12], &[1, 2, 3]);
     b[0] = b'X';
-    assert!(matches!(format::decode(&b).unwrap_err(), Error::BadFormat(_)));
+    assert!(matches!(
+        format::decode(&b).unwrap_err(),
+        Error::BadFormat(_)
+    ));
 }
 
 #[test]
 fn rejects_truncated_without_panicking() {
-    let full = format::encode(&params(), &[0u8; 12], &vec![5u8; 20]);
+    let full = format::encode(&params(), &[0u8; 12], &[5u8; 20]);
     for cut in 0..full.len() {
         // must return an error, never panic
         let _ = format::decode(&full[..cut]);
