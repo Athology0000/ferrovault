@@ -73,7 +73,10 @@ The master password is **never a CLI flag** — only hidden interactive prompts,
 | `gen [length]` | Generate a strong password (no vault needed). |
 | `change-password` | Rotate the master password — re-encrypt under a fresh salt + current KDF params. |
 | `totp <name>` · `check [name]` | Live TOTP code · HIBP breach check (k-anonymity). |
+| `stats` | Local-only vault health: 2FA coverage, weak/reused passwords (nothing sent anywhere). |
 | `ui` · `config ui <tui\|gui>` | Launch the chosen UI · set the default. |
+| `config scramble <on\|off>` | Toggle reversible byte-obfuscation of the vault file at rest (hides its structure — obfuscation, not encryption). |
+| `encode` · `decode` · `fingerprint` | Map text to/from a mixture of CJK · Cyrillic · Arabic glyphs (a local, reversible *encoding* — not secrecy), or a one-way recognition fingerprint. |
 
 ---
 
@@ -138,10 +141,24 @@ flowchart LR
     OPEN -->|"wrong password OR tampered"| ERR["WrongPasswordOrCorrupt"]
 ```
 
+## App flow
+
+Launch a UI, unlock once, then browse — every change is written back through the same locked, atomic path:
+
+```mermaid
+flowchart LR
+    UI["ferrovault ui"] --> LOCK["Lock screen<br/>master password"]
+    LOCK -->|"unlock"| V["Vault view"]
+    V --> S["search · select"]
+    V --> R["reveal · copy · live TOTP"]
+    V --> E["add · delete"]
+    E --> W["locked atomic write"] --> V
+```
+
 ## Build & test
 
 ```sh
-cargo test                              # 39 tests
+cargo test                              # 49 tests
 cargo clippy --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
