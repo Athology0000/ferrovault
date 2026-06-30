@@ -16,6 +16,10 @@ const CYAN: Color32 = Color32::from_rgb(137, 220, 235);
 const MAUVE: Color32 = Color32::from_rgb(203, 166, 247);
 const RED: Color32 = Color32::from_rgb(243, 139, 168);
 const GREEN: Color32 = Color32::from_rgb(166, 227, 161);
+const MANTLE: Color32 = Color32::from_rgb(24, 24, 37);
+const SURFACE1: Color32 = Color32::from_rgb(69, 71, 90);
+const OVERLAY: Color32 = Color32::from_rgb(127, 132, 156);
+const CARD: Color32 = Color32::from_rgb(36, 37, 54);
 
 pub struct GuiApp {
     store: VaultStore,
@@ -166,7 +170,17 @@ impl GuiApp {
         visuals.widgets.noninteractive.fg_stroke.color = TEXT;
         visuals.widgets.inactive.fg_stroke.color = TEXT;
         visuals.override_text_color = Some(TEXT);
+        visuals.selection.bg_fill = SURFACE1;
+        let rounding = egui::Rounding::same(6.0);
+        visuals.widgets.noninteractive.rounding = rounding;
+        visuals.widgets.inactive.rounding = rounding;
+        visuals.widgets.hovered.rounding = rounding;
+        visuals.widgets.active.rounding = rounding;
         ctx.set_visuals(visuals);
+        ctx.style_mut(|s| {
+            s.spacing.item_spacing = egui::vec2(8.0, 9.0);
+            s.spacing.button_padding = egui::vec2(12.0, 7.0);
+        });
     }
 
     fn build_ui(&mut self, ctx: &egui::Context) {
@@ -181,12 +195,7 @@ impl GuiApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space(160.0);
-                ui.label(
-                    RichText::new("▌ ferrovault")
-                        .size(28.0)
-                        .color(CYAN)
-                        .strong(),
-                );
+                ui.label(RichText::new("ferrovault").size(30.0).color(CYAN).strong());
                 ui.add_space(8.0);
                 ui.label(
                     RichText::new("Encrypted password manager")
@@ -225,60 +234,76 @@ impl GuiApp {
         let entry_count = filtered.len();
 
         // ── Top bar ──────────────────────────────────────────────────────────
-        egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(
-                    RichText::new("▌ ferrovault")
-                        .color(CYAN)
-                        .strong()
-                        .size(16.0),
-                );
-                ui.separator();
-                ui.label(
-                    RichText::new(&self.vault_path)
-                        .size(12.0)
-                        .color(Color32::from_rgb(108, 112, 134)),
-                );
-                ui.separator();
-                ui.label(
-                    RichText::new(format!("{entry_count} entries"))
-                        .size(12.0)
-                        .color(Color32::from_rgb(108, 112, 134)),
-                );
-                ui.separator();
-                ui.label(RichText::new("Search:").size(12.0).color(TEXT));
-                let search_resp = ui.add(
-                    egui::TextEdit::singleline(&mut self.query)
-                        .hint_text("filter entries…")
-                        .desired_width(200.0),
-                );
-                if search_resp.changed() {
-                    self.selected = self.filtered().into_iter().next();
-                }
+        egui::TopBottomPanel::top("top_bar")
+            .frame(
+                egui::Frame::default()
+                    .fill(MANTLE)
+                    .inner_margin(egui::Margin::symmetric(16.0, 11.0)),
+            )
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("ferrovault").color(CYAN).strong().size(18.0));
+                    ui.add_space(12.0);
+                    ui.label(RichText::new(&self.vault_path).size(12.0).color(OVERLAY));
+                    ui.add_space(8.0);
+                    ui.label(
+                        RichText::new(format!("· {entry_count} entries"))
+                            .size(12.0)
+                            .color(OVERLAY),
+                    );
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let resp = ui.add(
+                            egui::TextEdit::singleline(&mut self.query)
+                                .hint_text("Search…")
+                                .desired_width(220.0),
+                        );
+                        if resp.changed() {
+                            self.selected = self.filtered().into_iter().next();
+                        }
+                    });
+                });
             });
-        });
 
         // ── Status bar ───────────────────────────────────────────────────────
         let status_snapshot = self.status.clone();
-        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
-            ui.horizontal(|ui| {
+        egui::TopBottomPanel::bottom("status_bar")
+            .frame(
+                egui::Frame::default()
+                    .fill(MANTLE)
+                    .inner_margin(egui::Margin::symmetric(16.0, 6.0)),
+            )
+            .show(ctx, |ui| {
                 if !status_snapshot.is_empty() {
-                    ui.label(RichText::new(&status_snapshot).color(GREEN).size(12.0));
+                    let col = if status_snapshot.starts_with("Error") {
+                        RED
+                    } else {
+                        OVERLAY
+                    };
+                    ui.label(RichText::new(&status_snapshot).color(col).size(12.0));
                 }
             });
-        });
 
         // ── Left sidebar ─────────────────────────────────────────────────────
         egui::SidePanel::left("entries_list")
-            .default_width(280.0)
+            .default_width(260.0)
+            .frame(
+                egui::Frame::default()
+                    .fill(BASE)
+                    .inner_margin(egui::Margin::same(10.0)),
+            )
             .show(ctx, |ui| {
+                ui.add_space(2.0);
+                ui.label(RichText::new("ENTRIES").size(11.0).color(OVERLAY).strong());
+                ui.add_space(6.0);
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.set_min_width(270.0);
                     for &idx in &filtered {
                         let e = &self.entries[idx];
                         let is_sel = self.selected == Some(idx);
-                        let label = format!("{}\n{}", e.name, e.username);
-                        if ui.selectable_label(is_sel, &label).clicked() {
+                        let resp = ui.add_sized(
+                            [ui.available_width(), 30.0],
+                            egui::SelectableLabel::new(is_sel, RichText::new(&e.name).strong()),
+                        );
+                        if resp.clicked() {
                             self.selected = Some(idx);
                         }
                     }
@@ -286,155 +311,192 @@ impl GuiApp {
             });
 
         // ── Central panel ────────────────────────────────────────────────────
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let add_label = if self.adding {
-                "✕ Cancel"
-            } else {
-                "+ Add entry"
-            };
-            if ui.button(RichText::new(add_label).color(MAUVE)).clicked() {
-                self.adding = !self.adding;
-                if !self.adding {
-                    self.add_name.clear();
-                    self.add_username.clear();
-                    self.add_password.clear();
-                    self.add_url.clear();
-                    self.add_totp.clear();
-                }
-            }
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::default()
+                    .fill(BASE)
+                    .inner_margin(egui::Margin::same(20.0)),
+            )
+            .show(ctx, |ui| {
+                // Toolbar: selected-entry title (left) + add/cancel button (right).
+                let title = self
+                    .selected
+                    .and_then(|i| self.entries.get(i))
+                    .map(|e| e.name.clone());
+                ui.horizontal(|ui| {
+                    if self.adding {
+                        ui.label(RichText::new("New entry").size(20.0).color(TEXT).strong());
+                    } else if let Some(ref t) = title {
+                        ui.label(RichText::new(t).size(20.0).color(TEXT).strong());
+                    } else {
+                        ui.label(RichText::new("ferrovault").size(20.0).color(OVERLAY));
+                    }
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let (lbl, col) = if self.adding {
+                            ("✕  Cancel", RED)
+                        } else {
+                            ("+  Add entry", MAUVE)
+                        };
+                        if ui
+                            .add(egui::Button::new(RichText::new(lbl).color(col)))
+                            .clicked()
+                        {
+                            self.adding = !self.adding;
+                            if !self.adding {
+                                self.add_name.clear();
+                                self.add_username.clear();
+                                self.add_password.clear();
+                                self.add_url.clear();
+                                self.add_totp.clear();
+                            }
+                        }
+                    });
+                });
+                ui.add_space(14.0);
 
-            if self.adding {
-                self.show_add_form(ui);
-                return;
-            }
-
-            let sel_idx = match self.selected {
-                Some(i) if self.entries.get(i).is_some() => i,
-                _ => {
-                    ui.label(
-                        RichText::new("Select an entry from the list.")
-                            .color(Color32::from_rgb(108, 112, 134)),
-                    );
+                if self.adding {
+                    egui::Frame::default()
+                        .fill(CARD)
+                        .rounding(10.0)
+                        .inner_margin(egui::Margin::same(18.0))
+                        .show(ui, |ui| {
+                            self.show_add_form(ui);
+                        });
                     return;
                 }
-            };
 
-            let now = self.now();
-            // Clone all display data upfront to release immutable borrows
-            let name = self.entries[sel_idx].name.clone();
-            let username = self.entries[sel_idx].username.clone();
-            let password = self.entries[sel_idx].password.clone();
-            let url = self.entries[sel_idx].url.clone();
-            let notes = self.entries[sel_idx].notes.clone();
-            let totp_secret = self.entries[sel_idx].totp_secret.clone();
-
-            egui::Grid::new("detail_grid")
-                .num_columns(2)
-                .spacing([8.0, 6.0])
-                .show(ui, |ui| {
-                    ui.label(RichText::new("Name").color(CYAN));
-                    ui.label(&name);
-                    ui.end_row();
-
-                    ui.label(RichText::new("Username").color(CYAN));
-                    ui.label(&username);
-                    ui.end_row();
-
-                    ui.label(RichText::new("Password").color(CYAN));
-                    if self.revealed {
-                        ui.label(RichText::new(&password).color(GREEN));
-                    } else {
-                        ui.label(
-                            RichText::new("●".repeat(password.len().min(20)))
-                                .color(Color32::from_rgb(108, 112, 134)),
-                        );
+                let sel_idx = match self.selected {
+                    Some(i) if self.entries.get(i).is_some() => i,
+                    _ => {
+                        ui.label(RichText::new("Select an entry from the list.").color(OVERLAY));
+                        return;
                     }
-                    ui.end_row();
+                };
 
-                    if let Some(ref u) = url {
-                        ui.label(RichText::new("URL").color(CYAN));
-                        ui.hyperlink(u);
-                        ui.end_row();
+                let now = self.now();
+                let name = self.entries[sel_idx].name.clone();
+                let username = self.entries[sel_idx].username.clone();
+                let password = self.entries[sel_idx].password.clone();
+                let url = self.entries[sel_idx].url.clone();
+                let notes = self.entries[sel_idx].notes.clone();
+                let totp_secret = self.entries[sel_idx].totp_secret.clone();
+
+                // Detail card.
+                egui::Frame::default()
+                    .fill(CARD)
+                    .rounding(10.0)
+                    .inner_margin(egui::Margin::same(20.0))
+                    .show(ui, |ui| {
+                        egui::Grid::new("detail_grid")
+                            .num_columns(2)
+                            .spacing([16.0, 12.0])
+                            .min_col_width(92.0)
+                            .show(ui, |ui| {
+                                ui.label(RichText::new("Username").color(CYAN));
+                                ui.label(RichText::new(&username).color(TEXT));
+                                ui.end_row();
+
+                                ui.label(RichText::new("Password").color(CYAN));
+                                if self.revealed {
+                                    ui.label(RichText::new(&password).color(GREEN).monospace());
+                                } else {
+                                    ui.label(
+                                        RichText::new("•".repeat(password.len().min(24)))
+                                            .color(OVERLAY)
+                                            .monospace(),
+                                    );
+                                }
+                                ui.end_row();
+
+                                if let Some(ref u) = url {
+                                    ui.label(RichText::new("URL").color(CYAN));
+                                    ui.hyperlink(u);
+                                    ui.end_row();
+                                }
+                                if let Some(ref n) = notes {
+                                    ui.label(RichText::new("Notes").color(CYAN));
+                                    ui.label(RichText::new(n).color(TEXT));
+                                    ui.end_row();
+                                }
+                                if let Some(ref secret) = totp_secret {
+                                    ui.label(RichText::new("TOTP").color(CYAN));
+                                    match crate::totp::current_code(secret, now) {
+                                        Ok((code, remaining)) => {
+                                            ui.label(
+                                                RichText::new(format!("{code}   ({remaining}s)"))
+                                                    .color(MAUVE)
+                                                    .monospace()
+                                                    .size(15.0),
+                                            );
+                                        }
+                                        Err(_) => {
+                                            ui.label(RichText::new("invalid secret").color(RED));
+                                        }
+                                    }
+                                    ui.end_row();
+                                }
+                            });
+                    });
+
+                ui.add_space(16.0);
+                ui.horizontal(|ui| {
+                    let reveal_label = if self.revealed { "Hide" } else { "Reveal" };
+                    if ui.button(reveal_label).clicked() {
+                        self.revealed = !self.revealed;
                     }
-
-                    if let Some(ref n) = notes {
-                        ui.label(RichText::new("Notes").color(CYAN));
-                        ui.label(n);
-                        ui.end_row();
+                    if ui.button("Copy password").clicked() {
+                        match crate::clipboard::copy_with_clear(&password, 15) {
+                            Ok(_) => self.status = "Password copied (clears in 15s).".into(),
+                            Err(e) => self.status = format!("Error: {e}"),
+                        }
                     }
-
+                    if ui.button("Copy username").clicked() {
+                        match crate::clipboard::copy_with_clear(&username, 0) {
+                            Ok(_) => self.status = "Username copied.".into(),
+                            Err(e) => self.status = format!("Error: {e}"),
+                        }
+                    }
                     if let Some(ref secret) = totp_secret {
-                        ui.label(RichText::new("TOTP").color(CYAN));
-                        match crate::totp::current_code(secret, now) {
-                            Ok((code, remaining)) => {
-                                ui.label(
-                                    RichText::new(format!("{code}  ({remaining}s)")).color(MAUVE),
-                                );
-                            }
-                            Err(_) => {
-                                ui.label(RichText::new("invalid secret").color(RED));
+                        if ui.button("Copy TOTP").clicked() {
+                            match crate::totp::current_code(secret, now) {
+                                Ok((code, _)) => {
+                                    match crate::clipboard::copy_with_clear(&code, 15) {
+                                        Ok(_) => {
+                                            self.status = "TOTP copied (clears in 15s).".into()
+                                        }
+                                        Err(e) => self.status = format!("Error: {e}"),
+                                    }
+                                }
+                                Err(_) => self.status = "Error: invalid TOTP secret.".into(),
                             }
                         }
-                        ui.end_row();
+                    }
+                    if ui
+                        .add(egui::Button::new(RichText::new("Delete").color(RED)))
+                        .clicked()
+                    {
+                        let del_name = name.clone();
+                        let master_bytes = self.master.as_bytes().to_vec();
+                        match self.store.update(&master_bytes, |v| {
+                            v.entries.remove(&del_name);
+                            Ok(())
+                        }) {
+                            Ok(_) => {
+                                if let Ok((vault, _)) = self.store.open(&master_bytes) {
+                                    self.refresh_entries_from(vault);
+                                }
+                                self.selected = if self.entries.is_empty() {
+                                    None
+                                } else {
+                                    Some(0)
+                                };
+                                self.status = format!("Deleted '{name}'.");
+                            }
+                            Err(e) => self.status = format!("Error: {e}"),
+                        }
                     }
                 });
-
-            ui.add_space(12.0);
-            ui.horizontal(|ui| {
-                let reveal_label = if self.revealed { "Hide" } else { "Reveal" };
-                if ui.button(reveal_label).clicked() {
-                    self.revealed = !self.revealed;
-                }
-
-                if ui.button("Copy password").clicked() {
-                    match crate::clipboard::copy_with_clear(&password, 15) {
-                        Ok(_) => self.status = "Password copied (clears in 15s).".into(),
-                        Err(e) => self.status = format!("Error: {e}"),
-                    }
-                }
-
-                if ui.button("Copy username").clicked() {
-                    match crate::clipboard::copy_with_clear(&username, 0) {
-                        Ok(_) => self.status = "Username copied.".into(),
-                        Err(e) => self.status = format!("Error: {e}"),
-                    }
-                }
-
-                if let Some(ref secret) = totp_secret {
-                    if ui.button("Copy TOTP").clicked() {
-                        match crate::totp::current_code(secret, now) {
-                            Ok((code, _)) => match crate::clipboard::copy_with_clear(&code, 15) {
-                                Ok(_) => self.status = "TOTP copied (clears in 15s).".into(),
-                                Err(e) => self.status = format!("Error: {e}"),
-                            },
-                            Err(_) => self.status = "Error: invalid TOTP secret.".into(),
-                        }
-                    }
-                }
-
-                if ui.button(RichText::new("Delete").color(RED)).clicked() {
-                    let del_name = name.clone();
-                    let master_bytes = self.master.as_bytes().to_vec();
-                    match self.store.update(&master_bytes, |v| {
-                        v.entries.remove(&del_name);
-                        Ok(())
-                    }) {
-                        Ok(_) => {
-                            if let Ok((vault, _)) = self.store.open(&master_bytes) {
-                                self.refresh_entries_from(vault);
-                            }
-                            self.selected = if self.entries.is_empty() {
-                                None
-                            } else {
-                                Some(0)
-                            };
-                            self.status = format!("Deleted '{name}'.");
-                        }
-                        Err(e) => self.status = format!("Error: {e}"),
-                    }
-                }
             });
-        });
     }
 
     fn show_add_form(&mut self, ui: &mut egui::Ui) {

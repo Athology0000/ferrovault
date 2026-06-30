@@ -118,7 +118,7 @@ fn main() {
         ),
         (
             ferrovault::gui::GuiApp::demo(
-                "~/.local/share/ferrovault/vault.db".to_string(),
+                "~/.ferrovault/vault.pvlt".to_string(),
                 entries.clone(),
                 false,
                 false,
@@ -128,7 +128,7 @@ fn main() {
         ),
         (
             ferrovault::gui::GuiApp::demo(
-                "~/.local/share/ferrovault/vault.db".to_string(),
+                "~/.ferrovault/vault.pvlt".to_string(),
                 entries.clone(),
                 false,
                 true,
