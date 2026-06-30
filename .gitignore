@@ -19,3 +19,6 @@ Thumbs.db
 
 # Review screenshots (regenerated via tui_png example)
 /screenshots/
+
+# Internal spec/plan scaffolding (kept out of the public repo)
+/docs/superpowers/
