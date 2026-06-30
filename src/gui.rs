@@ -226,12 +226,12 @@ impl GuiApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space(160.0);
-                ui.label(RichText::new("ferrovault").size(30.0).color(CYAN).strong());
+                ui.label(RichText::new("ferrovault").size(36.0).color(CYAN).strong());
                 ui.add_space(8.0);
                 ui.label(
                     RichText::new("Encrypted password manager")
                         .size(14.0)
-                        .color(Color32::from_rgb(108, 112, 134)),
+                        .color(OVERLAY),
                 );
                 ui.add_space(24.0);
 
@@ -356,11 +356,11 @@ impl GuiApp {
                     .map(|e| e.name.clone());
                 ui.horizontal(|ui| {
                     if self.adding {
-                        ui.label(RichText::new("New entry").size(20.0).color(TEXT).strong());
+                        ui.label(RichText::new("New entry").size(22.0).color(TEXT).strong());
                     } else if let Some(ref t) = title {
-                        ui.label(RichText::new(t).size(20.0).color(TEXT).strong());
+                        ui.label(RichText::new(t).size(22.0).color(TEXT).strong());
                     } else {
-                        ui.label(RichText::new("ferrovault").size(20.0).color(OVERLAY));
+                        ui.label(RichText::new("ferrovault").size(22.0).color(OVERLAY));
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         let (lbl, col) = if self.adding {
@@ -420,19 +420,29 @@ impl GuiApp {
                     .show(ui, |ui| {
                         egui::Grid::new("detail_grid")
                             .num_columns(2)
-                            .spacing([16.0, 12.0])
-                            .min_col_width(92.0)
+                            .spacing([16.0, 14.0])
+                            .min_col_width(110.0)
                             .show(ui, |ui| {
-                                ui.label(RichText::new("Username").color(CYAN));
-                                ui.label(RichText::new(&username).color(TEXT));
+                                ui.label(
+                                    RichText::new("USERNAME").size(11.0).color(OVERLAY).strong(),
+                                );
+                                ui.label(RichText::new(&username).size(14.0).color(TEXT));
                                 ui.end_row();
 
-                                ui.label(RichText::new("Password").color(CYAN));
+                                ui.label(
+                                    RichText::new("PASSWORD").size(11.0).color(OVERLAY).strong(),
+                                );
                                 if self.revealed {
-                                    ui.label(RichText::new(&password).color(GREEN).monospace());
+                                    ui.label(
+                                        RichText::new(&password)
+                                            .size(14.0)
+                                            .color(GREEN)
+                                            .monospace(),
+                                    );
                                 } else {
                                     ui.label(
                                         RichText::new("•".repeat(password.len().min(24)))
+                                            .size(14.0)
                                             .color(OVERLAY)
                                             .monospace(),
                                     );
@@ -440,24 +450,30 @@ impl GuiApp {
                                 ui.end_row();
 
                                 if let Some(ref u) = url {
-                                    ui.label(RichText::new("URL").color(CYAN));
+                                    ui.label(
+                                        RichText::new("URL").size(11.0).color(OVERLAY).strong(),
+                                    );
                                     ui.hyperlink(u);
                                     ui.end_row();
                                 }
                                 if let Some(ref n) = notes {
-                                    ui.label(RichText::new("Notes").color(CYAN));
-                                    ui.label(RichText::new(n).color(TEXT));
+                                    ui.label(
+                                        RichText::new("NOTES").size(11.0).color(OVERLAY).strong(),
+                                    );
+                                    ui.label(RichText::new(n).size(14.0).color(TEXT));
                                     ui.end_row();
                                 }
                                 if let Some(ref secret) = totp_secret {
-                                    ui.label(RichText::new("TOTP").color(CYAN));
+                                    ui.label(
+                                        RichText::new("TOTP").size(11.0).color(OVERLAY).strong(),
+                                    );
                                     match crate::totp::current_code(secret, now) {
                                         Ok((code, remaining)) => {
                                             ui.label(
                                                 RichText::new(format!("{code}   ({remaining}s)"))
                                                     .color(MAUVE)
                                                     .monospace()
-                                                    .size(15.0),
+                                                    .size(16.0),
                                             );
                                         }
                                         Err(_) => {
@@ -533,25 +549,31 @@ impl GuiApp {
     fn show_add_form(&mut self, ui: &mut egui::Ui) {
         egui::Grid::new("add_form")
             .num_columns(2)
-            .spacing([8.0, 6.0])
+            .spacing([8.0, 10.0])
+            .min_col_width(110.0)
             .show(ui, |ui| {
-                ui.label(RichText::new("Name *").color(CYAN));
+                ui.label(RichText::new("NAME *").size(11.0).color(OVERLAY).strong());
                 ui.text_edit_singleline(&mut self.add_name);
                 ui.end_row();
 
-                ui.label(RichText::new("Username").color(CYAN));
+                ui.label(RichText::new("USERNAME").size(11.0).color(OVERLAY).strong());
                 ui.text_edit_singleline(&mut self.add_username);
                 ui.end_row();
 
-                ui.label(RichText::new("Password").color(CYAN));
+                ui.label(RichText::new("PASSWORD").size(11.0).color(OVERLAY).strong());
                 ui.add(egui::TextEdit::singleline(&mut self.add_password).password(true));
                 ui.end_row();
 
-                ui.label(RichText::new("URL").color(CYAN));
+                ui.label(RichText::new("URL").size(11.0).color(OVERLAY).strong());
                 ui.text_edit_singleline(&mut self.add_url);
                 ui.end_row();
 
-                ui.label(RichText::new("TOTP secret").color(CYAN));
+                ui.label(
+                    RichText::new("TOTP SECRET")
+                        .size(11.0)
+                        .color(OVERLAY)
+                        .strong(),
+                );
                 ui.text_edit_singleline(&mut self.add_totp);
                 ui.end_row();
             });
