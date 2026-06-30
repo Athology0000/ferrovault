@@ -76,6 +76,8 @@ The master password is **never a CLI flag** — only hidden interactive prompts,
 | `stats` | Local-only vault health: 2FA coverage, weak/reused passwords (nothing sent anywhere). |
 | `ui` · `config ui <tui\|gui>` | Launch the chosen UI · set the default. |
 | `config scramble <on\|off>` | Toggle reversible byte-obfuscation of the vault file at rest (hides its structure — obfuscation, not encryption). |
+| `keygen` · `config keyfile <path>` | Generate a 256-char paste-robust key · use a keyfile (second secret) so a hosted vault is uncrackable without it. |
+| `config remote <url>` · `sync` | Point at your own storage · end-to-end-encrypted pull → merge → push sync. |
 | `encode` · `decode` · `fingerprint` | Map text to/from a mixture of CJK · Cyrillic · Arabic glyphs (a local, reversible *encoding* — not secrecy), or a one-way recognition fingerprint. |
 
 ---
@@ -93,6 +95,23 @@ The master password is **never a CLI flag** — only hidden interactive prompts,
 | Breach check | k-anonymity — only the first 5 hex chars of the SHA-1 leave the machine |
 
 Wrong password and a tampered file are **indistinguishable** by design (both → one error). See **[`docs/threat-model.md`](docs/threat-model.md)** for what it defends against and what it explicitly does **not**, and **[`docs/code-walkthrough.md`](docs/code-walkthrough.md)** for a guided tour of the crypto/format/vault internals.
+
+---
+
+## Cross-device sync (optional, end-to-end encrypted)
+
+Bring your own storage — the host only ever sees ciphertext.
+
+```sh
+ferrovault keygen > key.txt              # a 256-char paste-robust key
+ferrovault config keyfile ./key.txt      # second secret, on each device — never uploaded
+ferrovault config remote https://your-host/vault.pvlt   # any HTTP GET/PUT endpoint you control
+ferrovault sync                          # pull → merge (newest-per-entry wins) → push
+```
+
+The **keyfile** is mixed into key derivation (`Argon2id(SHA256(SHA256(master) ∥ SHA256(keyfile)))`), so even a *publicly* hosted vault is uncrackable without it — and it never leaves your devices. `sync` warns loudly if you've set a remote without one.
+
+> Limitations (v1): deletes don't auto-propagate (delete on each device); concurrent edits to the *same* entry resolve by newest timestamp; enabling a keyfile re-keys the vault (apply with `change-password`).
 
 ---
 
@@ -158,7 +177,7 @@ flowchart LR
 ## Build & test
 
 ```sh
-cargo test                              # 49 tests
+cargo test                              # 60 tests
 cargo clippy --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
