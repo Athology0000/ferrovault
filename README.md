@@ -28,7 +28,8 @@ ferrovault is a **security tool built like one** — every layer is a deliberate
 - 💾 **Atomic, durable, lock-guarded writes** — a crash never leaves a half-written vault; concurrent processes can't corrupt it.
 - ⏱️ **Built-in TOTP** (RFC 6238) and **HIBP breach checking** via k-anonymity — only a 5-character hash prefix ever leaves your machine.
 - 🖥️ **Three interfaces from one library** — a scriptable CLI, a sleek terminal UI, and a desktop GUI, switchable with one setting.
-- ✅ **39 tests**, `clippy -D warnings` clean, pure-Rust dependency graph (no `ring`/C on Windows & macOS).
+- 🔄 **Optional end-to-end-encrypted sync** to storage you host — a keyfile (second secret) keeps a hosted vault uncrackable; the host only ever sees ciphertext.
+- ✅ **60 tests**, `clippy -D warnings` clean (dev + release), pure-Rust dependency graph (no `ring`/C on Windows & macOS).
 
 ---
 
