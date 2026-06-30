@@ -13,11 +13,22 @@ use zeroize::Zeroizing;
 
 pub struct VaultStore {
     path: PathBuf,
+    scramble: bool,
 }
 
 impl VaultStore {
     pub fn new(path: PathBuf) -> Self {
-        VaultStore { path }
+        VaultStore {
+            path,
+            scramble: false,
+        }
+    }
+
+    /// Enable the reversible byte-obfuscation layer for writes. Reads always
+    /// auto-detect, so this only affects how new writes are stored.
+    pub fn with_scramble(mut self, on: bool) -> Self {
+        self.scramble = on;
+        self
     }
 
     pub fn path(&self) -> &Path {
@@ -99,7 +110,11 @@ impl VaultStore {
             }
             Err(e) => return Err(e.into()),
         };
-        let d = format::decode(&bytes)?;
+        // Auto-detect the scramble layer: try descrambled bytes first, then raw.
+        let d = match format::decode(&crate::scramble::apply(&bytes)) {
+            Ok(d) => d,
+            Err(_) => format::decode(&bytes)?,
+        };
         let key = crypto::derive_key(master, &d.params)?;
         let pt = crypto::open(&key, &d.nonce, &d.aad, &d.ciphertext)?;
         let vault = model::from_cbor(&pt)?;
@@ -115,6 +130,11 @@ impl VaultStore {
         let aad = format::encode_header(params, &nonce, ct_len);
         let ct = crypto::seal(&key, &nonce, &aad, &pt)?;
         let bytes = format::encode(params, &nonce, &ct);
+        let bytes = if self.scramble {
+            crate::scramble::apply(&bytes)
+        } else {
+            bytes
+        };
         atomic_write(&self.path, &bytes)
     }
 }

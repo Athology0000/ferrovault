@@ -32,6 +32,9 @@ impl UiMode {
 pub struct Config {
     #[serde(default)]
     pub ui: UiMode,
+    /// Obfuscate the vault file's bytes at rest (reversible; not encryption).
+    #[serde(default)]
+    pub scramble: bool,
 }
 
 impl Config {

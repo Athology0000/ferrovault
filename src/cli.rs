@@ -87,4 +87,6 @@ pub enum ConfigAction {
     Show,
     /// Set the default UI mode (tui or gui).
     Ui { mode: String },
+    /// Toggle vault-file scrambling at rest (on/off) — obfuscation, not encryption.
+    Scramble { state: String },
 }

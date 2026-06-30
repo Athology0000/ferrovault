@@ -44,8 +44,11 @@ pub struct GuiApp {
 impl GuiApp {
     pub fn new(vault_path: PathBuf) -> Self {
         let vault_path_str = vault_path.display().to_string();
+        let scramble = crate::config::Config::load(&crate::config::Config::default_path())
+            .map(|c| c.scramble)
+            .unwrap_or(false);
         Self {
-            store: VaultStore::new(vault_path),
+            store: VaultStore::new(vault_path).with_scramble(scramble),
             vault_path: vault_path_str,
             master: Zeroizing::new(String::new()),
             locked: true,

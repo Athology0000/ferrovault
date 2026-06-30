@@ -37,8 +37,9 @@ fn read_line(prompt: &str) -> String {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
+    let cfg = Config::load(&Config::default_path()).unwrap_or_default();
     let path = cli.vault.clone().unwrap_or_else(default_vault_path);
-    let store = VaultStore::new(path);
+    let store = VaultStore::new(path).with_scramble(cfg.scramble);
 
     match cli.command {
         Command::Init => {
@@ -206,22 +207,36 @@ fn run() -> Result<()> {
                 }
                 UiMode::Tui => {
                     let master = prompt_master()?;
-                    let tui_store = VaultStore::new(default_vault_path());
+                    let tui_store =
+                        VaultStore::new(default_vault_path()).with_scramble(cfg.scramble);
                     ferrovault::tui::run(&tui_store, master.as_bytes())?;
                 }
             }
         }
         Command::Config { action } => match action {
             ConfigAction::Show => {
-                let cfg = Config::load(&Config::default_path()).unwrap_or_default();
-                println!("{}", cfg.ui.as_str());
+                println!("ui        {}", cfg.ui.as_str());
+                println!("scramble  {}", if cfg.scramble { "on" } else { "off" });
             }
             ConfigAction::Ui { mode } => {
                 let ui_mode = UiMode::parse(&mode)?;
-                let mut cfg = Config::load(&Config::default_path()).unwrap_or_default();
-                cfg.ui = ui_mode;
-                cfg.save(&Config::default_path())?;
-                eprintln!("UI mode set to {}", cfg.ui.as_str());
+                let mut c = Config::load(&Config::default_path()).unwrap_or_default();
+                c.ui = ui_mode;
+                c.save(&Config::default_path())?;
+                eprintln!("UI mode set to {}", c.ui.as_str());
+            }
+            ConfigAction::Scramble { state } => {
+                let on = matches!(
+                    state.trim().to_lowercase().as_str(),
+                    "on" | "true" | "yes" | "1"
+                );
+                let mut c = Config::load(&Config::default_path()).unwrap_or_default();
+                c.scramble = on;
+                c.save(&Config::default_path())?;
+                eprintln!(
+                    "Vault scrambling {} (obfuscation only). Re-save the vault to apply (any edit or change-password).",
+                    if on { "ENABLED" } else { "disabled" }
+                );
             }
         },
         Command::Encode { text } => {

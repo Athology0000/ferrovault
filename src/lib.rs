@@ -10,6 +10,7 @@ pub mod generator;
 pub mod gui;
 pub mod hibp;
 pub mod model;
+pub mod scramble;
 pub mod script_codec;
 pub mod totp;
 pub mod tui;
