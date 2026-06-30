@@ -12,6 +12,7 @@ use ratatui::Frame;
 // Data types
 // ──────────────────────────────────────────────────────────────────────────────
 
+#[derive(Clone)]
 pub struct EntryView {
     pub name: String,
     pub username: String,

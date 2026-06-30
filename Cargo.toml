@@ -34,6 +34,8 @@ time = { version = "0.3", features = ["formatting", "std"] }
 toml = "0.8"
 ratatui = "0.29"
 crossterm = "0.28"
+eframe = "0.29"
+egui = "0.29"
 
 [dev-dependencies]
 assert_cmd = "2"

@@ -169,7 +169,11 @@ fn run() -> Result<()> {
             };
             match mode {
                 UiMode::Gui => {
-                    eprintln!("GUI not built yet — run with --tui or set 'config ui tui'");
+                    let path = cli
+                        .vault
+                        .clone()
+                        .unwrap_or_else(ferrovault::commands::default_vault_path);
+                    ferrovault::gui::run(path)?;
                 }
                 UiMode::Tui => {
                     let master = prompt_master()?;
