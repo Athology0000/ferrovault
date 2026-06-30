@@ -5,6 +5,7 @@ use ferrovault::cli::{Cli, Command, ConfigAction};
 use ferrovault::commands::{self, default_vault_path, exit_code};
 use ferrovault::config::{Config, UiMode};
 use ferrovault::model::Entry;
+use ferrovault::sync::HttpRemote;
 use ferrovault::vault::VaultStore;
 use ferrovault::{Error, Result};
 use zeroize::Zeroizing;
@@ -39,7 +40,23 @@ fn run() -> Result<()> {
     let cli = Cli::parse();
     let cfg = Config::load(&Config::default_path()).unwrap_or_default();
     let path = cli.vault.clone().unwrap_or_else(default_vault_path);
-    let store = VaultStore::new(path).with_scramble(cfg.scramble);
+
+    // Load keyfile bytes once; all stores for this invocation share the same bytes.
+    let keyfile_bytes: Option<Vec<u8>> = if let Some(ref kf_path) = cfg.keyfile {
+        match std::fs::read(kf_path) {
+            Ok(b) => Some(b),
+            Err(e) => {
+                eprintln!("error: cannot read keyfile '{kf_path}': {e}");
+                std::process::exit(1);
+            }
+        }
+    } else {
+        None
+    };
+
+    let store = VaultStore::new(path)
+        .with_scramble(cfg.scramble)
+        .with_keyfile(keyfile_bytes.clone());
 
     match cli.command {
         Command::Init => {
@@ -207,16 +224,56 @@ fn run() -> Result<()> {
                 }
                 UiMode::Tui => {
                     let master = prompt_master()?;
-                    let tui_store =
-                        VaultStore::new(default_vault_path()).with_scramble(cfg.scramble);
+                    let tui_store = VaultStore::new(default_vault_path())
+                        .with_scramble(cfg.scramble)
+                        .with_keyfile(keyfile_bytes.clone());
                     ferrovault::tui::run(&tui_store, master.as_bytes())?;
                 }
             }
         }
+        Command::Sync => {
+            let remote_url = match cfg.remote.as_deref() {
+                Some(u) => u.to_string(),
+                None => {
+                    eprintln!("error: no remote configured — run `ferrovault config remote <url>`");
+                    std::process::exit(1);
+                }
+            };
+            if cfg.keyfile.is_none() {
+                eprintln!(
+                    "WARNING: syncing to a remote with no keyfile — the remote file's security \
+                     rests entirely on your master password. Set one with \
+                     `ferrovault config keyfile <path>` (see README)."
+                );
+            }
+            let remote = HttpRemote {
+                url: remote_url,
+                token: cfg.remote_token.clone(),
+            };
+            let master = prompt_master()?;
+            let report = commands::cmd_sync(&store, master.as_bytes(), &remote)?;
+            eprintln!(
+                "synced: {} entries ({} added, {} updated); pushed to remote",
+                report.total, report.added, report.updated
+            );
+        }
         Command::Config { action } => match action {
             ConfigAction::Show => {
-                println!("ui        {}", cfg.ui.as_str());
-                println!("scramble  {}", if cfg.scramble { "on" } else { "off" });
+                println!("ui           {}", cfg.ui.as_str());
+                println!("scramble     {}", if cfg.scramble { "on" } else { "off" });
+                println!(
+                    "keyfile      {}",
+                    cfg.keyfile.as_deref().unwrap_or("(none)")
+                );
+                println!("remote       {}", cfg.remote.as_deref().unwrap_or("(none)"));
+                println!(
+                    "remote_token {}",
+                    if cfg.remote_token.is_some() {
+                        "(set)"
+                    } else {
+                        "(none)"
+                    }
+                );
             }
             ConfigAction::Ui { mode } => {
                 let ui_mode = UiMode::parse(&mode)?;
@@ -237,6 +294,45 @@ fn run() -> Result<()> {
                     "Vault scrambling {} (obfuscation only). Re-save the vault to apply (any edit or change-password).",
                     if on { "ENABLED" } else { "disabled" }
                 );
+            }
+            ConfigAction::Keyfile { path } => {
+                let mut c = Config::load(&Config::default_path()).unwrap_or_default();
+                c.keyfile = if path.trim().to_lowercase() == "none" {
+                    None
+                } else {
+                    Some(path.clone())
+                };
+                c.save(&Config::default_path())?;
+                match &c.keyfile {
+                    Some(p) => eprintln!("Keyfile set to '{p}'."),
+                    None => eprintln!("Keyfile cleared."),
+                }
+            }
+            ConfigAction::Remote { url } => {
+                let mut c = Config::load(&Config::default_path()).unwrap_or_default();
+                c.remote = if url.trim().to_lowercase() == "none" {
+                    None
+                } else {
+                    Some(url.clone())
+                };
+                c.save(&Config::default_path())?;
+                match &c.remote {
+                    Some(u) => eprintln!("Remote set to '{u}'."),
+                    None => eprintln!("Remote cleared."),
+                }
+            }
+            ConfigAction::RemoteToken { token } => {
+                let mut c = Config::load(&Config::default_path()).unwrap_or_default();
+                c.remote_token = if token.trim().to_lowercase() == "none" {
+                    None
+                } else {
+                    Some(token.clone())
+                };
+                c.save(&Config::default_path())?;
+                match &c.remote_token {
+                    Some(_) => eprintln!("Remote token set."),
+                    None => eprintln!("Remote token cleared."),
+                }
             }
         },
         Command::Encode { text } => {

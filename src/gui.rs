@@ -44,11 +44,15 @@ pub struct GuiApp {
 impl GuiApp {
     pub fn new(vault_path: PathBuf) -> Self {
         let vault_path_str = vault_path.display().to_string();
-        let scramble = crate::config::Config::load(&crate::config::Config::default_path())
-            .map(|c| c.scramble)
-            .unwrap_or(false);
+        let cfg =
+            crate::config::Config::load(&crate::config::Config::default_path()).unwrap_or_default();
+        let scramble = cfg.scramble;
+        let keyfile_bytes: Option<Vec<u8>> =
+            cfg.keyfile.as_deref().and_then(|p| std::fs::read(p).ok());
         Self {
-            store: VaultStore::new(vault_path).with_scramble(scramble),
+            store: VaultStore::new(vault_path)
+                .with_scramble(scramble)
+                .with_keyfile(keyfile_bytes),
             vault_path: vault_path_str,
             master: Zeroizing::new(String::new()),
             locked: true,

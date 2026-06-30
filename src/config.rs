@@ -35,6 +35,16 @@ pub struct Config {
     /// Obfuscate the vault file's bytes at rest (reversible; not encryption).
     #[serde(default)]
     pub scramble: bool,
+    /// Optional path to a keyfile. When set, the vault key is derived from
+    /// SHA256(SHA256(master) ‖ SHA256(keyfile)) rather than the master alone.
+    #[serde(default)]
+    pub keyfile: Option<String>,
+    /// HTTP(S) URL of the remote vault storage endpoint.
+    #[serde(default)]
+    pub remote: Option<String>,
+    /// Bearer token for authenticating to the remote endpoint.
+    #[serde(default)]
+    pub remote_token: Option<String>,
 }
 
 impl Config {

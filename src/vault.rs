@@ -14,6 +14,7 @@ use zeroize::Zeroizing;
 pub struct VaultStore {
     path: PathBuf,
     scramble: bool,
+    keyfile: Option<Zeroizing<Vec<u8>>>,
 }
 
 impl VaultStore {
@@ -21,6 +22,7 @@ impl VaultStore {
         VaultStore {
             path,
             scramble: false,
+            keyfile: None,
         }
     }
 
@@ -28,6 +30,11 @@ impl VaultStore {
     /// auto-detect, so this only affects how new writes are stored.
     pub fn with_scramble(mut self, on: bool) -> Self {
         self.scramble = on;
+        self
+    }
+
+    pub fn with_keyfile(mut self, kf: Option<Vec<u8>>) -> Self {
+        self.keyfile = kf.map(Zeroizing::new);
         self
     }
 
@@ -100,6 +107,21 @@ impl VaultStore {
         self.with_lock(|| self.write_locked(master, params, vault))
     }
 
+    /// Decrypt raw PVLT bytes (e.g. a remote copy) into a Vault, honoring this
+    /// store's keyfile and scramble auto-detection.
+    pub fn decrypt_bytes(&self, master: &[u8], bytes: &[u8]) -> Result<Vault> {
+        // auto-detect scramble: try unscrambled first, then scrambled
+        let decoded = if let Ok(d) = format::decode(bytes) {
+            d
+        } else {
+            format::decode(&crate::scramble::apply(bytes))?
+        };
+        let secret = composite_secret(master, self.keyfile.as_ref().map(|z| z.as_slice()));
+        let key = crypto::derive_key(&secret, &decoded.params)?;
+        let plain = crypto::open(&key, &decoded.nonce, &decoded.aad, &decoded.ciphertext)?;
+        model::from_cbor(&plain)
+    }
+
     // --- internals (assume the lock is already held) ---
 
     fn read_locked(&self, master: &[u8]) -> Result<(Vault, KdfParams)> {
@@ -115,14 +137,16 @@ impl VaultStore {
             Ok(d) => d,
             Err(_) => format::decode(&bytes)?,
         };
-        let key = crypto::derive_key(master, &d.params)?;
+        let secret = composite_secret(master, self.keyfile.as_ref().map(|z| z.as_slice()));
+        let key = crypto::derive_key(&secret, &d.params)?;
         let pt = crypto::open(&key, &d.nonce, &d.aad, &d.ciphertext)?;
         let vault = model::from_cbor(&pt)?;
         Ok((vault, d.params))
     }
 
     fn write_locked(&self, master: &[u8], params: &KdfParams, vault: &Vault) -> Result<()> {
-        let key = crypto::derive_key(master, params)?;
+        let secret = composite_secret(master, self.keyfile.as_ref().map(|z| z.as_slice()));
+        let key = crypto::derive_key(&secret, params)?;
         let pt = Zeroizing::new(model::to_cbor(vault)?);
         let mut nonce = [0u8; 12];
         rand::rngs::OsRng.fill_bytes(&mut nonce);
@@ -136,6 +160,22 @@ impl VaultStore {
             bytes
         };
         atomic_write(&self.path, &bytes)
+    }
+}
+
+/// Combine the master password with an optional keyfile into the secret fed to
+/// the KDF. With no keyfile this is the master bytes (backward compatible);
+/// with a keyfile it is SHA256( SHA256(master) || SHA256(keyfile) ) (KeePass-style).
+fn composite_secret(master: &[u8], keyfile: Option<&[u8]>) -> Zeroizing<Vec<u8>> {
+    match keyfile {
+        None => Zeroizing::new(master.to_vec()),
+        Some(kf) => {
+            use sha2::{Digest, Sha256};
+            let mut h = Sha256::new();
+            h.update(Sha256::digest(master));
+            h.update(Sha256::digest(kf));
+            Zeroizing::new(h.finalize().to_vec())
+        }
     }
 }
 

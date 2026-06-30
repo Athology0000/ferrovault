@@ -79,6 +79,8 @@ pub enum Command {
     Decode { text: String },
     /// One-way visual fingerprint of text in exotic glyphs (reveals nothing).
     Fingerprint { text: Option<String> },
+    /// Sync the vault with your configured remote (end-to-end encrypted).
+    Sync,
 }
 
 #[derive(clap::Subcommand)]
@@ -89,4 +91,10 @@ pub enum ConfigAction {
     Ui { mode: String },
     /// Toggle vault-file scrambling at rest (on/off) — obfuscation, not encryption.
     Scramble { state: String },
+    /// Set (or clear) the keyfile path. Pass `none` to clear.
+    Keyfile { path: String },
+    /// Set (or clear) the remote sync URL. Pass `none` to clear.
+    Remote { url: String },
+    /// Set (or clear) the remote bearer token. Pass `none` to clear.
+    RemoteToken { token: String },
 }

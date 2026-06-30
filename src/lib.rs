@@ -12,6 +12,7 @@ pub mod hibp;
 pub mod model;
 pub mod scramble;
 pub mod script_codec;
+pub mod sync;
 pub mod totp;
 pub mod tui;
 pub mod vault;

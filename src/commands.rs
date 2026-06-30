@@ -149,6 +149,51 @@ pub fn cmd_stats(store: &VaultStore, master: &[u8]) -> Result<VaultStats> {
     })
 }
 
+/// Sync the local vault with a remote, merging by newest `updated` timestamp.
+///
+/// The remote only ever receives/sends opaque ciphertext; plaintext never leaves
+/// the machine. A keyfile (if configured on the store) is part of the encryption
+/// key for the pushed bytes.
+pub fn cmd_sync(
+    store: &VaultStore,
+    master: &[u8],
+    remote: &impl crate::sync::Remote,
+) -> Result<crate::sync::SyncReport> {
+    // 1. Load the local vault, or start with an empty one if it doesn't exist yet.
+    let local = if store.path().exists() {
+        let (vault, _) = store.open(master)?;
+        vault
+    } else {
+        crate::model::Vault {
+            version: 1,
+            entries: Default::default(),
+        }
+    };
+
+    // 2. Pull the remote vault, or use an empty one if the remote is fresh.
+    let remote_vault = match remote.pull()? {
+        Some(bytes) => store.decrypt_bytes(master, &bytes)?,
+        None => crate::model::Vault {
+            version: 1,
+            entries: Default::default(),
+        },
+    };
+
+    // 3. Merge: newest `updated` wins per entry.
+    let (merged, mut report) = crate::sync::merge(local, remote_vault);
+
+    // 4. Persist the merged vault locally.
+    let params = KdfParams::generate_default();
+    store.rewrite(master, &params, &merged)?;
+
+    // 5. Push the just-written bytes to the remote.
+    let bytes = std::fs::read(store.path())?;
+    remote.push(&bytes)?;
+    report.pushed = true;
+
+    Ok(report)
+}
+
 pub fn exit_code(err: &Error) -> i32 {
     match err {
         Error::VaultNotFound(_) => 3,
