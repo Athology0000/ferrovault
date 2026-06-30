@@ -102,6 +102,10 @@ fn run() -> Result<()> {
                 if let Some(n) = &entry.notes {
                     println!("notes     {n}");
                 }
+                println!(
+                    "fingerprint  {}",
+                    ferrovault::script_codec::fingerprint(&entry.password)
+                );
             }
         }
         Command::List => {
@@ -195,6 +199,29 @@ fn run() -> Result<()> {
                 eprintln!("UI mode set to {}", cfg.ui.as_str());
             }
         },
+        Command::Encode { text } => {
+            let input = match text {
+                Some(t) => Zeroizing::new(t),
+                None => Zeroizing::new(
+                    rpassword::prompt_password("Text to encode (hidden): ").map_err(Error::Io)?,
+                ),
+            };
+            eprintln!("(this is a reversible encoding, not encryption — anyone can decode it)");
+            println!("{}", ferrovault::script_codec::encode(&input));
+        }
+        Command::Decode { text } => {
+            println!("{}", ferrovault::script_codec::decode(&text)?);
+        }
+        Command::Fingerprint { text } => {
+            let input = match text {
+                Some(t) => Zeroizing::new(t),
+                None => Zeroizing::new(
+                    rpassword::prompt_password("Text to fingerprint (hidden): ")
+                        .map_err(Error::Io)?,
+                ),
+            };
+            println!("{}", ferrovault::script_codec::fingerprint(&input));
+        }
     }
     Ok(())
 }

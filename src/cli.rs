@@ -67,6 +67,15 @@ pub enum Command {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Encode text into a mixture of CJK/Cyrillic/Arabic glyphs.
+    ///
+    /// A reversible LOCAL encoding (like base64 with an exotic alphabet) — NOT
+    /// encryption and not secret. Prompts hidden if no text is given.
+    Encode { text: Option<String> },
+    /// Decode ferrovault-encoded glyphs back to the original text.
+    Decode { text: String },
+    /// One-way visual fingerprint of text in exotic glyphs (reveals nothing).
+    Fingerprint { text: Option<String> },
 }
 
 #[derive(clap::Subcommand)]
