@@ -81,6 +81,15 @@ pub enum Command {
     Fingerprint { text: Option<String> },
     /// Sync the vault with your configured remote (end-to-end encrypted).
     Sync,
+    /// Generate a long, paste-robust random key for use as a keyfile.
+    ///
+    /// Prints a high-entropy alphanumeric key (default 256 chars). Save it to a
+    /// file and set it on each device with `config keyfile <path>`. Back it up —
+    /// losing it means losing the vault.
+    Keygen {
+        #[arg(default_value_t = 256)]
+        length: usize,
+    },
 }
 
 #[derive(clap::Subcommand)]

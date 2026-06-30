@@ -257,6 +257,16 @@ fn run() -> Result<()> {
                 report.total, report.added, report.updated
             );
         }
+        Command::Keygen { length } => {
+            let key = ferrovault::generator::generate(&ferrovault::generator::GenOptions {
+                length,
+                symbols: false,
+            })?;
+            println!("{}", key.as_str());
+            eprintln!(
+                "Save this as a keyfile and set it on each device with `ferrovault config keyfile <path>`. Back it up — losing it means losing the vault."
+            );
+        }
         Command::Config { action } => match action {
             ConfigAction::Show => {
                 println!("ui           {}", cfg.ui.as_str());
