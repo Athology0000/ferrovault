@@ -95,17 +95,47 @@ Wrong password and a tampered file are **indistinguishable** by design (both →
 
 ## Architecture
 
-A library crate holds all logic; a thin binary parses args and dispatches. Each module has one responsibility and is independently tested.
+A library crate holds all logic; a thin binary parses args and dispatches. Each module has one responsibility and is independently tested. The three UIs share one encrypted core — only `vault` touches the disk.
 
+```mermaid
+flowchart TD
+    CLI["CLI · clap"] --> CMD["commands"]
+    TUI["TUI · ratatui"] --> CMD
+    GUI["GUI · egui"] --> CMD
+    CMD --> VAULT["vault · advisory lock · atomic durable write · CRUD"]
+    VAULT --> CRYPTO["crypto · Argon2id · AES-256-GCM"]
+    VAULT --> FORMAT["format · PVLT container · header = AAD"]
+    VAULT --> MODEL["model · Entry / Vault · CBOR"]
+    VAULT --> DISK[("vault.pvlt")]
 ```
-src/
-  crypto.rs   Argon2id KDF · AES-256-GCM seal/open (+ AAD)
-  format.rs   PVLT binary container (header = AAD), bounds-checked decode
-  model.rs    Entry/Vault data model · CBOR · password zeroize-on-drop
-  vault.rs    locked, atomic, durable read-modify-write · KDF auto-upgrade
-  generator.rs  unbiased CSPRNG password generation
-  totp.rs · hibp.rs   RFC 6238 · HIBP k-anonymity
-  tui.rs · gui.rs · cli.rs · commands.rs   the three UIs + handlers
+
+## How encryption works
+
+The **write path** — derive a key, serialize, seal, and bind the header as authenticated data:
+
+```mermaid
+flowchart LR
+    MP["master password"] --> KDF["Argon2id<br/>64 MiB · t=3 · p=4"]
+    SALT["16-byte salt"] --> KDF
+    KDF --> KEY["32-byte key"]
+    ENT["entries"] --> CBOR["CBOR encode"] --> PT["plaintext"]
+    HDR["binary header<br/>(= AAD)"] --> SEAL["AES-256-GCM<br/>seal"]
+    NONCE["fresh 12-byte nonce"] --> SEAL
+    KEY --> SEAL
+    PT --> SEAL
+    SEAL --> OUT[("PVLT file<br/>header + ciphertext + tag")]
+```
+
+The **read path** is fail-closed — a wrong password and a tampered file are cryptographically **indistinguishable**, so both surface as one error:
+
+```mermaid
+flowchart LR
+    F[("PVLT file")] --> DEC["decode header<br/>(bounds-checked, never panics)"]
+    MP["master password"] --> K["Argon2id"]
+    DEC -->|"params · nonce · aad · ciphertext"| OPEN["AES-256-GCM<br/>open"]
+    K --> OPEN
+    OPEN -->|"tag verifies"| OK["CBOR decode → Vault unlocked"]
+    OPEN -->|"wrong password OR tampered"| ERR["WrongPasswordOrCorrupt"]
 ```
 
 ## Build & test

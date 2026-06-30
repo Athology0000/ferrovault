@@ -117,6 +117,11 @@
   footer a{color:var(--subtext)}
   .note{max-width:560px}
 
+  /* diagram */
+  .diagram{display:flex;justify-content:center}
+  .mermaid{background:var(--mantle);border:1px solid var(--surface0);border-radius:16px;
+           padding:28px;max-width:100%;overflow:auto}
+
   @media (max-width:880px){
     h1{font-size:3rem} .grid{grid-template-columns:1fr 1fr}
     .split,.usage{grid-template-columns:1fr} .navlinks{display:none}
@@ -131,6 +136,7 @@
   <div class="navlinks">
     <a href="#features">Features</a>
     <a href="#security">Security</a>
+    <a href="#architecture">Architecture</a>
     <a href="#screens">Screenshots</a>
     <a href="#start">Quick start</a>
     <a href="https://github.com/Athology0000/ferrovault">GitHub</a>
@@ -199,9 +205,27 @@
   </div>
 </div></section>
 
+<section id="architecture"><div class="wrap">
+  <div class="sec-head"><h2>How it <span class="accent">fits together</span></h2>
+    <p>Three interfaces, one encrypted core — only the vault touches disk.</p></div>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    CLI["CLI · clap"] --> CMD["commands"]
+    TUI["TUI · ratatui"] --> CMD
+    GUI["GUI · egui"] --> CMD
+    CMD --> VAULT["vault · advisory lock · atomic write · CRUD"]
+    VAULT --> CRYPTO["crypto · Argon2id · AES-256-GCM"]
+    VAULT --> FORMAT["format · PVLT container · header = AAD"]
+    VAULT --> MODEL["model · Entry / Vault · CBOR"]
+    VAULT --> DISK[("vault.pvlt")]
+    </pre>
+  </div>
+</div></section>
+
 <section id="screens"><div class="wrap">
-  <div class="sec-head"><h2>The <span class="accent">terminal UI</span></h2>
-    <p>Searchable, keyboard-driven, masked by default.</p></div>
+  <div class="sec-head"><h2>The <span class="accent">interfaces</span></h2>
+    <p>A sleek terminal UI and a desktop GUI — searchable, masked by default, live TOTP.</p></div>
   <div class="shots">
     <figure class="shot">
       <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
@@ -217,6 +241,16 @@
       <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
         <span class="name">ferrovault — search</span></div>
       <img src="./assets/03-search.png" alt="Search filtering the entry list" />
+    </figure>
+    <figure class="shot">
+      <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="name">ferrovault — desktop GUI · unlock</span></div>
+      <img src="./assets/gui-lock.png" alt="Desktop GUI lock screen" />
+    </figure>
+    <figure class="shot">
+      <div class="cap"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="name">ferrovault — desktop GUI · entry revealed</span></div>
+      <img src="./assets/gui-revealed.png" alt="Desktop GUI with entry revealed" />
     </figure>
   </div>
 </div></section>
@@ -265,5 +299,18 @@
   </div>
 </div></footer>
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      background: '#1e1e2e', primaryColor: '#313244', primaryTextColor: '#cdd6f4',
+      primaryBorderColor: '#585b70', lineColor: '#7f849c',
+      secondaryColor: '#181825', tertiaryColor: '#181825',
+      fontFamily: 'ui-monospace, SFMono-Regular, monospace', fontSize: '15px'
+    }
+  });
+</script>
 </body>
 </html>
