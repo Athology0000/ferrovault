@@ -159,27 +159,58 @@ impl GuiApp {
 
     fn apply_theme(ctx: &egui::Context) {
         let mut visuals = egui::Visuals::dark();
+
+        // Panel / window fills — Catppuccin Base
         visuals.panel_fill = BASE;
         visuals.window_fill = BASE;
-        visuals.selection.bg_fill = SURFACE0;
+        visuals.window_stroke = egui::Stroke::new(1.0, SURFACE0); // subtle window border
+
         visuals.hyperlink_color = BLUE;
-        visuals.widgets.noninteractive.bg_fill = SURFACE0;
-        visuals.widgets.inactive.bg_fill = SURFACE0;
-        visuals.widgets.hovered.bg_fill = Color32::from_rgb(69, 71, 90);
-        visuals.widgets.active.bg_fill = Color32::from_rgb(88, 91, 112);
-        visuals.widgets.noninteractive.fg_stroke.color = TEXT;
-        visuals.widgets.inactive.fg_stroke.color = TEXT;
-        visuals.override_text_color = Some(TEXT);
-        visuals.selection.bg_fill = SURFACE1;
+        // Scrollbar trough + text-field inner bg darkened to Mantle
+        visuals.extreme_bg_color = MANTLE;
+
+        // Text-selection: translucent blue instead of solid dark surface
+        visuals.selection.bg_fill = Color32::from_rgba_unmultiplied(137, 180, 250, 55);
+        visuals.selection.stroke = egui::Stroke::new(1.0, BLUE);
+
+        // Consistent 6 px rounding across all widget states
         let rounding = egui::Rounding::same(6.0);
+
+        // noninteractive — label backgrounds + separator lines
         visuals.widgets.noninteractive.rounding = rounding;
+        visuals.widgets.noninteractive.bg_fill = SURFACE0;
+        visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(1.0, SURFACE1); // subtle separator
+        visuals.widgets.noninteractive.fg_stroke.color = TEXT;
+
+        // inactive — default button / input state
         visuals.widgets.inactive.rounding = rounding;
+        visuals.widgets.inactive.bg_fill = SURFACE0;
+        visuals.widgets.inactive.fg_stroke.color = TEXT;
+
+        // hovered — distinct lighter fill + blue focus ring
         visuals.widgets.hovered.rounding = rounding;
+        visuals.widgets.hovered.bg_fill = Color32::from_rgb(59, 61, 79); // midpoint SURFACE0..SURFACE1
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5, BLUE); // blue focus ring
+        visuals.widgets.hovered.fg_stroke.color = TEXT;
+
+        // active (pressed) — elevated fill + blue ring retained
         visuals.widgets.active.rounding = rounding;
+        visuals.widgets.active.bg_fill = Color32::from_rgb(88, 91, 112); // Overlay0
+        visuals.widgets.active.bg_stroke = egui::Stroke::new(1.5, BLUE);
+        visuals.widgets.active.fg_stroke.color = TEXT;
+
+        // open (combo-box / dropdown open state)
+        visuals.widgets.open.rounding = rounding;
+        visuals.widgets.open.bg_fill = SURFACE1;
+
+        visuals.override_text_color = Some(TEXT);
+
         ctx.set_visuals(visuals);
         ctx.style_mut(|s| {
-            s.spacing.item_spacing = egui::vec2(8.0, 9.0);
+            s.spacing.item_spacing = egui::vec2(8.0, 10.0); // slight extra vertical breathing
             s.spacing.button_padding = egui::vec2(12.0, 7.0);
+            s.spacing.scroll.bar_width = 6.0; // slim scrollbar
+            s.spacing.scroll.bar_outer_margin = 2.0;
         });
     }
 
