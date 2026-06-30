@@ -53,6 +53,9 @@ pub enum Command {
     Totp { name: String },
     /// Check a password against Have I Been Pwned (k-anonymity).
     Check { name: Option<String> },
+    /// Local-only vault health report: entry count, 2FA coverage, weak/reused
+    /// passwords. Computed entirely on your machine — never sent anywhere.
+    Stats,
     /// Launch the interactive UI (TUI by default).
     Ui {
         /// Force the graphical desktop UI.

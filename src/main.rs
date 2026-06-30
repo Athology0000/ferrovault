@@ -163,6 +163,31 @@ fn run() -> Result<()> {
                 Err(e) => return Err(e),
             }
         }
+        Command::Stats => {
+            let master = prompt_master()?;
+            let s = commands::cmd_stats(&store, master.as_bytes())?;
+            let pct = |n: usize| {
+                if s.total > 0 {
+                    n as f64 * 100.0 / s.total as f64
+                } else {
+                    0.0
+                }
+            };
+            println!("entries          {}", s.total);
+            println!(
+                "with 2FA (TOTP)  {} ({:.0}%)",
+                s.with_totp,
+                pct(s.with_totp)
+            );
+            println!("with URL         {} ({:.0}%)", s.with_url, pct(s.with_url));
+            println!("avg length       {:.1}", s.avg_len);
+            println!("weak passwords   {}", s.weak);
+            println!(
+                "reused passwords {} ({} entries share a password)",
+                s.reused_passwords, s.reused_entries
+            );
+            eprintln!("(computed locally — nothing was sent anywhere)");
+        }
         Command::Ui { gui, tui } => {
             let mode = if gui {
                 UiMode::Gui

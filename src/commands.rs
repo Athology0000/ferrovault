@@ -81,6 +81,74 @@ pub fn cmd_check(password: &str) -> Result<u64> {
     pwned_count(&HttpFetcher, password)
 }
 
+/// Local-only vault health metrics. Computed on-machine; never transmitted.
+pub struct VaultStats {
+    pub total: usize,
+    pub with_totp: usize,
+    pub with_url: usize,
+    pub weak: usize,
+    pub reused_passwords: usize,
+    pub reused_entries: usize,
+    pub avg_len: f64,
+}
+
+fn is_weak(pw: &str) -> bool {
+    let len = pw.chars().count();
+    if len < 12 {
+        return true;
+    }
+    let classes = [
+        pw.chars().any(|c| c.is_ascii_lowercase()),
+        pw.chars().any(|c| c.is_ascii_uppercase()),
+        pw.chars().any(|c| c.is_ascii_digit()),
+        pw.chars().any(|c| !c.is_ascii_alphanumeric()),
+    ]
+    .iter()
+    .filter(|&&b| b)
+    .count();
+    classes < 3
+}
+
+/// Compute local-only health stats for the vault.
+pub fn cmd_stats(store: &VaultStore, master: &[u8]) -> Result<VaultStats> {
+    let (vault, _) = store.open(master)?;
+    let total = vault.entries.len();
+    let mut with_totp = 0;
+    let mut with_url = 0;
+    let mut weak = 0;
+    let mut len_sum = 0usize;
+    let mut pw_counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for e in vault.entries.values() {
+        if e.totp.is_some() {
+            with_totp += 1;
+        }
+        if e.url.is_some() {
+            with_url += 1;
+        }
+        if is_weak(&e.password) {
+            weak += 1;
+        }
+        len_sum += e.password.chars().count();
+        *pw_counts.entry(e.password.as_str()).or_insert(0) += 1;
+    }
+    let reused_passwords = pw_counts.values().filter(|&&c| c > 1).count();
+    let reused_entries: usize = pw_counts.values().filter(|&&c| c > 1).sum();
+    let avg_len = if total > 0 {
+        len_sum as f64 / total as f64
+    } else {
+        0.0
+    };
+    Ok(VaultStats {
+        total,
+        with_totp,
+        with_url,
+        weak,
+        reused_passwords,
+        reused_entries,
+        avg_len,
+    })
+}
+
 pub fn exit_code(err: &Error) -> i32 {
     match err {
         Error::VaultNotFound(_) => 3,
