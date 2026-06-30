@@ -44,3 +44,10 @@ tempfile = "3"
 # Used only by the `tui_png` example (renders the TUI to PNG for visual review).
 image = { version = "0.25", default-features = false, features = ["png"] }
 ab_glyph = "0.2"
+
+# Optimized, stripped release build — no debug info, LTO, single codegen unit.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
